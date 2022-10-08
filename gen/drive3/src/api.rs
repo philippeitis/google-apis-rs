@@ -90,7 +90,7 @@ impl Default for Scope {
 /// use drive3::{Result, Error};
 /// # async fn dox() {
 /// use std::default::Default;
-/// use drive3::{DriveHub, oauth2, hyper, hyper_rustls};
+/// use drive3::{DriveHub, oauth2, hyper, hyper_rustls, chrono, FieldMask};
 /// 
 /// // Get an ApplicationSecret instance by some means. It contains the `client_id` and 
 /// // `client_secret`, among other things.
@@ -263,10 +263,11 @@ pub struct About {
     pub kind: Option<String>,
     /// A map of maximum import sizes by MIME type, in bytes.
     #[serde(rename="maxImportSizes")]
-    pub max_import_sizes: Option<HashMap<String, String>>,
+    pub max_import_sizes: Option<HashMap<String, i64>>,
     /// The maximum upload size in bytes.
     #[serde(rename="maxUploadSize")]
-    pub max_upload_size: Option<String>,
+    #[serde(with = "client::serde::str_like")]
+    pub max_upload_size: Option<i64>,
     /// The user's storage quota limits and usage. All fields are measured in bytes.
     #[serde(rename="storageQuota")]
     pub storage_quota: Option<AboutStorageQuota>,
@@ -317,7 +318,7 @@ pub struct Change {
     #[serde(rename="teamDriveId")]
     pub team_drive_id: Option<String>,
     /// The time of this change (RFC 3339 date-time).
-    pub time: Option<String>,
+    pub time: Option<client::chrono::DateTime<client::chrono::offset::Utc>>,
     /// Deprecated - use changeType instead.
     #[serde(rename="type")]
     pub type_: Option<String>,
@@ -368,7 +369,8 @@ pub struct Channel {
     /// The address where notifications are delivered for this channel.
     pub address: Option<String>,
     /// Date and time of notification channel expiration, expressed as a Unix timestamp, in milliseconds. Optional.
-    pub expiration: Option<String>,
+    #[serde(with = "client::serde::str_like")]
+    pub expiration: Option<i64>,
     /// A UUID or similar unique string that identifies this channel.
     pub id: Option<String>,
     /// Identifies this as a notification channel used to watch for changes to a resource, which is "api#channel".
@@ -418,7 +420,7 @@ pub struct Comment {
     pub content: Option<String>,
     /// The time at which the comment was created (RFC 3339 date-time).
     #[serde(rename="createdTime")]
-    pub created_time: Option<String>,
+    pub created_time: Option<client::chrono::DateTime<client::chrono::offset::Utc>>,
     /// Whether the comment has been deleted. A deleted comment has no content.
     pub deleted: Option<bool>,
     /// The content of the comment with HTML formatting.
@@ -430,7 +432,7 @@ pub struct Comment {
     pub kind: Option<String>,
     /// The last time the comment or any of its replies was modified (RFC 3339 date-time).
     #[serde(rename="modifiedTime")]
-    pub modified_time: Option<String>,
+    pub modified_time: Option<client::chrono::DateTime<client::chrono::offset::Utc>>,
     /// The file content to which the comment refers, typically within the anchor region. For a text file, for example, this would be the text at the location of the comment.
     #[serde(rename="quotedFileContent")]
     pub quoted_file_content: Option<CommentQuotedFileContent>,
@@ -484,7 +486,7 @@ pub struct ContentRestriction {
     pub restricting_user: Option<User>,
     /// The time at which the content restriction was set (formatted RFC 3339 timestamp). Only populated if readOnly is true.
     #[serde(rename="restrictionTime")]
-    pub restriction_time: Option<String>,
+    pub restriction_time: Option<client::chrono::DateTime<client::chrono::offset::Utc>>,
     /// The type of the content restriction. Currently the only possible value is globalContentRestriction.
     #[serde(rename="type")]
     pub type_: Option<String>,
@@ -523,7 +525,7 @@ pub struct Drive {
     pub color_rgb: Option<String>,
     /// The time at which the shared drive was created (RFC 3339 date-time).
     #[serde(rename="createdTime")]
-    pub created_time: Option<String>,
+    pub created_time: Option<client::chrono::DateTime<client::chrono::offset::Utc>>,
     /// Whether the shared drive is hidden from default view.
     pub hidden: Option<bool>,
     /// The ID of this shared drive which is also the ID of the top level folder of this shared drive.
@@ -607,7 +609,7 @@ pub struct File {
     pub copy_requires_writer_permission: Option<bool>,
     /// The time at which the file was created (RFC 3339 date-time).
     #[serde(rename="createdTime")]
-    pub created_time: Option<String>,
+    pub created_time: Option<client::chrono::DateTime<client::chrono::offset::Utc>>,
     /// A short description of the file.
     pub description: Option<String>,
     /// ID of the shared drive the file resides in. Only populated for items in shared drives.
@@ -671,11 +673,11 @@ pub struct File {
     pub modified_by_me: Option<bool>,
     /// The last time the file was modified by the user (RFC 3339 date-time).
     #[serde(rename="modifiedByMeTime")]
-    pub modified_by_me_time: Option<String>,
+    pub modified_by_me_time: Option<client::chrono::DateTime<client::chrono::offset::Utc>>,
     /// The last time the file was modified by anyone (RFC 3339 date-time).
     /// Note that setting modifiedTime will also update modifiedByMeTime for the user.
     #[serde(rename="modifiedTime")]
-    pub modified_time: Option<String>,
+    pub modified_time: Option<client::chrono::DateTime<client::chrono::offset::Utc>>,
     /// The name of the file. This is not necessarily unique within a folder. Note that for immutable items such as the top level folders of shared drives, My Drive root folder, and Application Data folder the name is constant.
     pub name: Option<String>,
     /// The original filename of the uploaded content if available, or else the original value of the name field. This is only available for files with binary content in Google Drive.
@@ -699,7 +701,8 @@ pub struct File {
     pub properties: Option<HashMap<String, String>>,
     /// The number of storage quota bytes used by the file. This includes the head revision as well as previous revisions with keepForever enabled.
     #[serde(rename="quotaBytesUsed")]
-    pub quota_bytes_used: Option<String>,
+    #[serde(with = "client::serde::str_like")]
+    pub quota_bytes_used: Option<i64>,
     /// A key needed to access the item via a shared link.
     #[serde(rename="resourceKey")]
     pub resource_key: Option<String>,
@@ -707,7 +710,7 @@ pub struct File {
     pub shared: Option<bool>,
     /// The time at which the file was shared with the user, if applicable (RFC 3339 date-time).
     #[serde(rename="sharedWithMeTime")]
-    pub shared_with_me_time: Option<String>,
+    pub shared_with_me_time: Option<client::chrono::DateTime<client::chrono::offset::Utc>>,
     /// The user who shared the file with the requesting user, if applicable.
     #[serde(rename="sharingUser")]
     pub sharing_user: Option<User>,
@@ -715,7 +718,8 @@ pub struct File {
     #[serde(rename="shortcutDetails")]
     pub shortcut_details: Option<FileShortcutDetails>,
     /// The size of the file's content in bytes. This is applicable to binary files in Google Drive and Google Docs files.
-    pub size: Option<String>,
+    #[serde(with = "client::serde::str_like")]
+    pub size: Option<i64>,
     /// The list of spaces which contain the file. The currently supported values are 'drive', 'appDataFolder' and 'photos'.
     pub spaces: Option<Vec<String>>,
     /// Whether the user has starred the file.
@@ -728,17 +732,19 @@ pub struct File {
     pub thumbnail_link: Option<String>,
     /// The thumbnail version for use in thumbnail cache invalidation.
     #[serde(rename="thumbnailVersion")]
-    pub thumbnail_version: Option<String>,
+    #[serde(with = "client::serde::str_like")]
+    pub thumbnail_version: Option<i64>,
     /// Whether the file has been trashed, either explicitly or from a trashed parent folder. Only the owner may trash a file. The trashed item is excluded from all files.list responses returned for any user who does not own the file. However, all users with access to the file can see the trashed item metadata in an API response. All users with access can copy, download, export, and share the file.
     pub trashed: Option<bool>,
     /// The time that the item was trashed (RFC 3339 date-time). Only populated for items in shared drives.
     #[serde(rename="trashedTime")]
-    pub trashed_time: Option<String>,
+    pub trashed_time: Option<client::chrono::DateTime<client::chrono::offset::Utc>>,
     /// If the file has been explicitly trashed, the user who trashed it. Only populated for items in shared drives.
     #[serde(rename="trashingUser")]
     pub trashing_user: Option<User>,
     /// A monotonically increasing version number for the file. This reflects every change made to the file on the server, even those not visible to the user.
-    pub version: Option<String>,
+    #[serde(with = "client::serde::str_like")]
+    pub version: Option<i64>,
     /// Additional metadata about video media. This may not be available immediately upon upload.
     #[serde(rename="videoMediaMetadata")]
     pub video_media_metadata: Option<FileVideoMediaMetadata>,
@@ -747,7 +753,7 @@ pub struct File {
     pub viewed_by_me: Option<bool>,
     /// The last time the file was viewed by the user (RFC 3339 date-time).
     #[serde(rename="viewedByMeTime")]
-    pub viewed_by_me_time: Option<String>,
+    pub viewed_by_me_time: Option<client::chrono::DateTime<client::chrono::offset::Utc>>,
     /// Deprecated - use copyRequiresWriterPermission instead.
     #[serde(rename="viewersCanCopyContent")]
     pub viewers_can_copy_content: Option<bool>,
@@ -852,7 +858,7 @@ pub struct Permission {
     /// - The time must be in the future 
     /// - The time cannot be more than a year in the future
     #[serde(rename="expirationTime")]
-    pub expiration_time: Option<String>,
+    pub expiration_time: Option<client::chrono::DateTime<client::chrono::offset::Utc>>,
     /// The ID of this permission. This is a unique identifier for the grantee, and is published in User resources as permissionId. IDs should be treated as opaque values.
     pub id: Option<String>,
     /// Identifies what kind of resource this is. Value: the fixed string "drive#permission".
@@ -939,7 +945,7 @@ pub struct Reply {
     pub content: Option<String>,
     /// The time at which the reply was created (RFC 3339 date-time).
     #[serde(rename="createdTime")]
-    pub created_time: Option<String>,
+    pub created_time: Option<client::chrono::DateTime<client::chrono::offset::Utc>>,
     /// Whether the reply has been deleted. A deleted reply has no content.
     pub deleted: Option<bool>,
     /// The content of the reply with HTML formatting.
@@ -951,7 +957,7 @@ pub struct Reply {
     pub kind: Option<String>,
     /// The last time the reply was modified (RFC 3339 date-time).
     #[serde(rename="modifiedTime")]
-    pub modified_time: Option<String>,
+    pub modified_time: Option<client::chrono::DateTime<client::chrono::offset::Utc>>,
 }
 
 impl client::RequestValue for Reply {}
@@ -1017,7 +1023,7 @@ pub struct Revision {
     pub mime_type: Option<String>,
     /// The last time the revision was modified (RFC 3339 date-time).
     #[serde(rename="modifiedTime")]
-    pub modified_time: Option<String>,
+    pub modified_time: Option<client::chrono::DateTime<client::chrono::offset::Utc>>,
     /// The original filename used to create this revision. This is only applicable to files with binary content in Drive.
     #[serde(rename="originalFilename")]
     pub original_filename: Option<String>,
@@ -1033,7 +1039,8 @@ pub struct Revision {
     #[serde(rename="publishedOutsideDomain")]
     pub published_outside_domain: Option<bool>,
     /// The size of the revision's content in bytes. This is only applicable to files with binary content in Drive.
-    pub size: Option<String>,
+    #[serde(with = "client::serde::str_like")]
+    pub size: Option<i64>,
 }
 
 impl client::RequestValue for Revision {}
@@ -1111,7 +1118,7 @@ pub struct TeamDrive {
     pub color_rgb: Option<String>,
     /// The time at which the Team Drive was created (RFC 3339 date-time).
     #[serde(rename="createdTime")]
-    pub created_time: Option<String>,
+    pub created_time: Option<client::chrono::DateTime<client::chrono::offset::Utc>>,
     /// The ID of this Team Drive which is also the ID of the top level folder of this Team Drive.
     pub id: Option<String>,
     /// Identifies what kind of resource this is. Value: the fixed string "drive#teamDrive".
@@ -1211,15 +1218,19 @@ impl client::Part for AboutDriveThemes {}
 #[derive(Default, Clone, Debug, Serialize, Deserialize)]
 pub struct AboutStorageQuota {
     /// The usage limit, if applicable. This will not be present if the user has unlimited storage.
-    pub limit: Option<String>,
+    #[serde(with = "client::serde::str_like")]
+    pub limit: Option<i64>,
     /// The total usage across all services.
-    pub usage: Option<String>,
+    #[serde(with = "client::serde::str_like")]
+    pub usage: Option<i64>,
     /// The usage by all files in Google Drive.
     #[serde(rename="usageInDrive")]
-    pub usage_in_drive: Option<String>,
+    #[serde(with = "client::serde::str_like")]
+    pub usage_in_drive: Option<i64>,
     /// The usage by trashed files in Google Drive.
     #[serde(rename="usageInDriveTrash")]
-    pub usage_in_drive_trash: Option<String>,
+    #[serde(with = "client::serde::str_like")]
+    pub usage_in_drive_trash: Option<i64>,
 }
 
 impl client::NestedType for AboutStorageQuota {}
@@ -1519,7 +1530,8 @@ impl client::Part for FileContentHints {}
 #[derive(Default, Clone, Debug, Serialize, Deserialize)]
 pub struct FileContentHintsThumbnail {
     /// The thumbnail data encoded with URL-safe Base64 (RFC 4648 section 5).
-    pub image: Option<String>,
+    #[serde(with = "client::serde::urlsafe_base64")]
+    pub image: Option<Vec<u8>>,
     /// The MIME type of the thumbnail.
     #[serde(rename="mimeType")]
     pub mime_type: Option<String>,
@@ -1661,7 +1673,8 @@ impl client::Part for FileShortcutDetails {}
 pub struct FileVideoMediaMetadata {
     /// The duration of the video in milliseconds.
     #[serde(rename="durationMillis")]
-    pub duration_millis: Option<String>,
+    #[serde(with = "client::serde::str_like")]
+    pub duration_millis: Option<i64>,
     /// The height of the video in pixels.
     pub height: Option<i32>,
     /// The width of the video in pixels.
@@ -1857,7 +1870,7 @@ impl client::Part for TeamDriveRestrictions {}
 /// 
 /// # async fn dox() {
 /// use std::default::Default;
-/// use drive3::{DriveHub, oauth2, hyper, hyper_rustls};
+/// use drive3::{DriveHub, oauth2, hyper, hyper_rustls, chrono, FieldMask};
 /// 
 /// let secret: oauth2::ApplicationSecret = Default::default();
 /// let auth = oauth2::InstalledFlowAuthenticator::builder(
@@ -1910,7 +1923,7 @@ impl<'a, S> AboutMethods<'a, S> {
 /// 
 /// # async fn dox() {
 /// use std::default::Default;
-/// use drive3::{DriveHub, oauth2, hyper, hyper_rustls};
+/// use drive3::{DriveHub, oauth2, hyper, hyper_rustls, chrono, FieldMask};
 /// 
 /// let secret: oauth2::ApplicationSecret = Default::default();
 /// let auth = oauth2::InstalledFlowAuthenticator::builder(
@@ -2027,7 +2040,7 @@ impl<'a, S> ChangeMethods<'a, S> {
 /// 
 /// # async fn dox() {
 /// use std::default::Default;
-/// use drive3::{DriveHub, oauth2, hyper, hyper_rustls};
+/// use drive3::{DriveHub, oauth2, hyper, hyper_rustls, chrono, FieldMask};
 /// 
 /// let secret: oauth2::ApplicationSecret = Default::default();
 /// let auth = oauth2::InstalledFlowAuthenticator::builder(
@@ -2085,7 +2098,7 @@ impl<'a, S> ChannelMethods<'a, S> {
 /// 
 /// # async fn dox() {
 /// use std::default::Default;
-/// use drive3::{DriveHub, oauth2, hyper, hyper_rustls};
+/// use drive3::{DriveHub, oauth2, hyper, hyper_rustls, chrono, FieldMask};
 /// 
 /// let secret: oauth2::ApplicationSecret = Default::default();
 /// let auth = oauth2::InstalledFlowAuthenticator::builder(
@@ -2226,7 +2239,7 @@ impl<'a, S> CommentMethods<'a, S> {
 /// 
 /// # async fn dox() {
 /// use std::default::Default;
-/// use drive3::{DriveHub, oauth2, hyper, hyper_rustls};
+/// use drive3::{DriveHub, oauth2, hyper, hyper_rustls, chrono, FieldMask};
 /// 
 /// let secret: oauth2::ApplicationSecret = Default::default();
 /// let auth = oauth2::InstalledFlowAuthenticator::builder(
@@ -2391,7 +2404,7 @@ impl<'a, S> DriveMethods<'a, S> {
 /// 
 /// # async fn dox() {
 /// use std::default::Default;
-/// use drive3::{DriveHub, oauth2, hyper, hyper_rustls};
+/// use drive3::{DriveHub, oauth2, hyper, hyper_rustls, chrono, FieldMask};
 /// 
 /// let secret: oauth2::ApplicationSecret = Default::default();
 /// let auth = oauth2::InstalledFlowAuthenticator::builder(
@@ -2648,7 +2661,7 @@ impl<'a, S> FileMethods<'a, S> {
 /// 
 /// # async fn dox() {
 /// use std::default::Default;
-/// use drive3::{DriveHub, oauth2, hyper, hyper_rustls};
+/// use drive3::{DriveHub, oauth2, hyper, hyper_rustls, chrono, FieldMask};
 /// 
 /// let secret: oauth2::ApplicationSecret = Default::default();
 /// let auth = oauth2::InstalledFlowAuthenticator::builder(
@@ -2809,7 +2822,7 @@ impl<'a, S> PermissionMethods<'a, S> {
 /// 
 /// # async fn dox() {
 /// use std::default::Default;
-/// use drive3::{DriveHub, oauth2, hyper, hyper_rustls};
+/// use drive3::{DriveHub, oauth2, hyper, hyper_rustls, chrono, FieldMask};
 /// 
 /// let secret: oauth2::ApplicationSecret = Default::default();
 /// let auth = oauth2::InstalledFlowAuthenticator::builder(
@@ -2959,7 +2972,7 @@ impl<'a, S> ReplyMethods<'a, S> {
 /// 
 /// # async fn dox() {
 /// use std::default::Default;
-/// use drive3::{DriveHub, oauth2, hyper, hyper_rustls};
+/// use drive3::{DriveHub, oauth2, hyper, hyper_rustls, chrono, FieldMask};
 /// 
 /// let secret: oauth2::ApplicationSecret = Default::default();
 /// let auth = oauth2::InstalledFlowAuthenticator::builder(
@@ -3079,7 +3092,7 @@ impl<'a, S> RevisionMethods<'a, S> {
 /// 
 /// # async fn dox() {
 /// use std::default::Default;
-/// use drive3::{DriveHub, oauth2, hyper, hyper_rustls};
+/// use drive3::{DriveHub, oauth2, hyper, hyper_rustls, chrono, FieldMask};
 /// 
 /// let secret: oauth2::ApplicationSecret = Default::default();
 /// let auth = oauth2::InstalledFlowAuthenticator::builder(
@@ -3217,7 +3230,7 @@ impl<'a, S> TeamdriveMethods<'a, S> {
 /// # extern crate google_drive3 as drive3;
 /// # async fn dox() {
 /// # use std::default::Default;
-/// # use drive3::{DriveHub, oauth2, hyper, hyper_rustls};
+/// # use drive3::{DriveHub, oauth2, hyper, hyper_rustls, chrono, FieldMask};
 /// 
 /// # let secret: oauth2::ApplicationSecret = Default::default();
 /// # let auth = oauth2::InstalledFlowAuthenticator::builder(
@@ -3378,7 +3391,8 @@ where
     /// The delegate implementation is consulted whenever there is an intermediate result, or if something goes wrong
     /// while executing the actual API request.
     /// 
-    /// It should be used to handle progress information, and to implement a certain level of resilience.
+    /// ````text
+    ///                   It should be used to handle progress information, and to implement a certain level of resilience.````
     ///
     /// Sets the *delegate* property to the given value.
     pub fn delegate(mut self, new_value: &'a mut dyn client::Delegate) -> AboutGetCall<'a, S> {
@@ -3449,7 +3463,7 @@ where
 /// # extern crate google_drive3 as drive3;
 /// # async fn dox() {
 /// # use std::default::Default;
-/// # use drive3::{DriveHub, oauth2, hyper, hyper_rustls};
+/// # use drive3::{DriveHub, oauth2, hyper, hyper_rustls, chrono, FieldMask};
 /// 
 /// # let secret: oauth2::ApplicationSecret = Default::default();
 /// # let auth = oauth2::InstalledFlowAuthenticator::builder(
@@ -3658,7 +3672,8 @@ where
     /// The delegate implementation is consulted whenever there is an intermediate result, or if something goes wrong
     /// while executing the actual API request.
     /// 
-    /// It should be used to handle progress information, and to implement a certain level of resilience.
+    /// ````text
+    ///                   It should be used to handle progress information, and to implement a certain level of resilience.````
     ///
     /// Sets the *delegate* property to the given value.
     pub fn delegate(mut self, new_value: &'a mut dyn client::Delegate) -> ChangeGetStartPageTokenCall<'a, S> {
@@ -3729,7 +3744,7 @@ where
 /// # extern crate google_drive3 as drive3;
 /// # async fn dox() {
 /// # use std::default::Default;
-/// # use drive3::{DriveHub, oauth2, hyper, hyper_rustls};
+/// # use drive3::{DriveHub, oauth2, hyper, hyper_rustls, chrono, FieldMask};
 /// 
 /// # let secret: oauth2::ApplicationSecret = Default::default();
 /// # let auth = oauth2::InstalledFlowAuthenticator::builder(
@@ -4046,7 +4061,8 @@ where
     /// The delegate implementation is consulted whenever there is an intermediate result, or if something goes wrong
     /// while executing the actual API request.
     /// 
-    /// It should be used to handle progress information, and to implement a certain level of resilience.
+    /// ````text
+    ///                   It should be used to handle progress information, and to implement a certain level of resilience.````
     ///
     /// Sets the *delegate* property to the given value.
     pub fn delegate(mut self, new_value: &'a mut dyn client::Delegate) -> ChangeListCall<'a, S> {
@@ -4118,7 +4134,7 @@ where
 /// use drive3::api::Channel;
 /// # async fn dox() {
 /// # use std::default::Default;
-/// # use drive3::{DriveHub, oauth2, hyper, hyper_rustls};
+/// # use drive3::{DriveHub, oauth2, hyper, hyper_rustls, chrono, FieldMask};
 /// 
 /// # let secret: oauth2::ApplicationSecret = Default::default();
 /// # let auth = oauth2::InstalledFlowAuthenticator::builder(
@@ -4464,7 +4480,8 @@ where
     /// The delegate implementation is consulted whenever there is an intermediate result, or if something goes wrong
     /// while executing the actual API request.
     /// 
-    /// It should be used to handle progress information, and to implement a certain level of resilience.
+    /// ````text
+    ///                   It should be used to handle progress information, and to implement a certain level of resilience.````
     ///
     /// Sets the *delegate* property to the given value.
     pub fn delegate(mut self, new_value: &'a mut dyn client::Delegate) -> ChangeWatchCall<'a, S> {
@@ -4536,7 +4553,7 @@ where
 /// use drive3::api::Channel;
 /// # async fn dox() {
 /// # use std::default::Default;
-/// # use drive3::{DriveHub, oauth2, hyper, hyper_rustls};
+/// # use drive3::{DriveHub, oauth2, hyper, hyper_rustls, chrono, FieldMask};
 /// 
 /// # let secret: oauth2::ApplicationSecret = Default::default();
 /// # let auth = oauth2::InstalledFlowAuthenticator::builder(
@@ -4715,7 +4732,8 @@ where
     /// The delegate implementation is consulted whenever there is an intermediate result, or if something goes wrong
     /// while executing the actual API request.
     /// 
-    /// It should be used to handle progress information, and to implement a certain level of resilience.
+    /// ````text
+    ///                   It should be used to handle progress information, and to implement a certain level of resilience.````
     ///
     /// Sets the *delegate* property to the given value.
     pub fn delegate(mut self, new_value: &'a mut dyn client::Delegate) -> ChannelStopCall<'a, S> {
@@ -4787,7 +4805,7 @@ where
 /// use drive3::api::Comment;
 /// # async fn dox() {
 /// # use std::default::Default;
-/// # use drive3::{DriveHub, oauth2, hyper, hyper_rustls};
+/// # use drive3::{DriveHub, oauth2, hyper, hyper_rustls, chrono, FieldMask};
 /// 
 /// # let secret: oauth2::ApplicationSecret = Default::default();
 /// # let auth = oauth2::InstalledFlowAuthenticator::builder(
@@ -5010,7 +5028,8 @@ where
     /// The delegate implementation is consulted whenever there is an intermediate result, or if something goes wrong
     /// while executing the actual API request.
     /// 
-    /// It should be used to handle progress information, and to implement a certain level of resilience.
+    /// ````text
+    ///                   It should be used to handle progress information, and to implement a certain level of resilience.````
     ///
     /// Sets the *delegate* property to the given value.
     pub fn delegate(mut self, new_value: &'a mut dyn client::Delegate) -> CommentCreateCall<'a, S> {
@@ -5081,7 +5100,7 @@ where
 /// # extern crate google_drive3 as drive3;
 /// # async fn dox() {
 /// # use std::default::Default;
-/// # use drive3::{DriveHub, oauth2, hyper, hyper_rustls};
+/// # use drive3::{DriveHub, oauth2, hyper, hyper_rustls, chrono, FieldMask};
 /// 
 /// # let secret: oauth2::ApplicationSecret = Default::default();
 /// # let auth = oauth2::InstalledFlowAuthenticator::builder(
@@ -5276,7 +5295,8 @@ where
     /// The delegate implementation is consulted whenever there is an intermediate result, or if something goes wrong
     /// while executing the actual API request.
     /// 
-    /// It should be used to handle progress information, and to implement a certain level of resilience.
+    /// ````text
+    ///                   It should be used to handle progress information, and to implement a certain level of resilience.````
     ///
     /// Sets the *delegate* property to the given value.
     pub fn delegate(mut self, new_value: &'a mut dyn client::Delegate) -> CommentDeleteCall<'a, S> {
@@ -5347,7 +5367,7 @@ where
 /// # extern crate google_drive3 as drive3;
 /// # async fn dox() {
 /// # use std::default::Default;
-/// # use drive3::{DriveHub, oauth2, hyper, hyper_rustls};
+/// # use drive3::{DriveHub, oauth2, hyper, hyper_rustls, chrono, FieldMask};
 /// 
 /// # let secret: oauth2::ApplicationSecret = Default::default();
 /// # let auth = oauth2::InstalledFlowAuthenticator::builder(
@@ -5565,7 +5585,8 @@ where
     /// The delegate implementation is consulted whenever there is an intermediate result, or if something goes wrong
     /// while executing the actual API request.
     /// 
-    /// It should be used to handle progress information, and to implement a certain level of resilience.
+    /// ````text
+    ///                   It should be used to handle progress information, and to implement a certain level of resilience.````
     ///
     /// Sets the *delegate* property to the given value.
     pub fn delegate(mut self, new_value: &'a mut dyn client::Delegate) -> CommentGetCall<'a, S> {
@@ -5636,7 +5657,7 @@ where
 /// # extern crate google_drive3 as drive3;
 /// # async fn dox() {
 /// # use std::default::Default;
-/// # use drive3::{DriveHub, oauth2, hyper, hyper_rustls};
+/// # use drive3::{DriveHub, oauth2, hyper, hyper_rustls, chrono, FieldMask};
 /// 
 /// # let secret: oauth2::ApplicationSecret = Default::default();
 /// # let auth = oauth2::InstalledFlowAuthenticator::builder(
@@ -5878,7 +5899,8 @@ where
     /// The delegate implementation is consulted whenever there is an intermediate result, or if something goes wrong
     /// while executing the actual API request.
     /// 
-    /// It should be used to handle progress information, and to implement a certain level of resilience.
+    /// ````text
+    ///                   It should be used to handle progress information, and to implement a certain level of resilience.````
     ///
     /// Sets the *delegate* property to the given value.
     pub fn delegate(mut self, new_value: &'a mut dyn client::Delegate) -> CommentListCall<'a, S> {
@@ -5950,7 +5972,7 @@ where
 /// use drive3::api::Comment;
 /// # async fn dox() {
 /// # use std::default::Default;
-/// # use drive3::{DriveHub, oauth2, hyper, hyper_rustls};
+/// # use drive3::{DriveHub, oauth2, hyper, hyper_rustls, chrono, FieldMask};
 /// 
 /// # let secret: oauth2::ApplicationSecret = Default::default();
 /// # let auth = oauth2::InstalledFlowAuthenticator::builder(
@@ -6185,7 +6207,8 @@ where
     /// The delegate implementation is consulted whenever there is an intermediate result, or if something goes wrong
     /// while executing the actual API request.
     /// 
-    /// It should be used to handle progress information, and to implement a certain level of resilience.
+    /// ````text
+    ///                   It should be used to handle progress information, and to implement a certain level of resilience.````
     ///
     /// Sets the *delegate* property to the given value.
     pub fn delegate(mut self, new_value: &'a mut dyn client::Delegate) -> CommentUpdateCall<'a, S> {
@@ -6257,7 +6280,7 @@ where
 /// use drive3::api::Drive;
 /// # async fn dox() {
 /// # use std::default::Default;
-/// # use drive3::{DriveHub, oauth2, hyper, hyper_rustls};
+/// # use drive3::{DriveHub, oauth2, hyper, hyper_rustls, chrono, FieldMask};
 /// 
 /// # let secret: oauth2::ApplicationSecret = Default::default();
 /// # let auth = oauth2::InstalledFlowAuthenticator::builder(
@@ -6459,7 +6482,8 @@ where
     /// The delegate implementation is consulted whenever there is an intermediate result, or if something goes wrong
     /// while executing the actual API request.
     /// 
-    /// It should be used to handle progress information, and to implement a certain level of resilience.
+    /// ````text
+    ///                   It should be used to handle progress information, and to implement a certain level of resilience.````
     ///
     /// Sets the *delegate* property to the given value.
     pub fn delegate(mut self, new_value: &'a mut dyn client::Delegate) -> DriveCreateCall<'a, S> {
@@ -6530,7 +6554,7 @@ where
 /// # extern crate google_drive3 as drive3;
 /// # async fn dox() {
 /// # use std::default::Default;
-/// # use drive3::{DriveHub, oauth2, hyper, hyper_rustls};
+/// # use drive3::{DriveHub, oauth2, hyper, hyper_rustls, chrono, FieldMask};
 /// 
 /// # let secret: oauth2::ApplicationSecret = Default::default();
 /// # let auth = oauth2::InstalledFlowAuthenticator::builder(
@@ -6713,7 +6737,8 @@ where
     /// The delegate implementation is consulted whenever there is an intermediate result, or if something goes wrong
     /// while executing the actual API request.
     /// 
-    /// It should be used to handle progress information, and to implement a certain level of resilience.
+    /// ````text
+    ///                   It should be used to handle progress information, and to implement a certain level of resilience.````
     ///
     /// Sets the *delegate* property to the given value.
     pub fn delegate(mut self, new_value: &'a mut dyn client::Delegate) -> DriveDeleteCall<'a, S> {
@@ -6784,7 +6809,7 @@ where
 /// # extern crate google_drive3 as drive3;
 /// # async fn dox() {
 /// # use std::default::Default;
-/// # use drive3::{DriveHub, oauth2, hyper, hyper_rustls};
+/// # use drive3::{DriveHub, oauth2, hyper, hyper_rustls, chrono, FieldMask};
 /// 
 /// # let secret: oauth2::ApplicationSecret = Default::default();
 /// # let auth = oauth2::InstalledFlowAuthenticator::builder(
@@ -6990,7 +7015,8 @@ where
     /// The delegate implementation is consulted whenever there is an intermediate result, or if something goes wrong
     /// while executing the actual API request.
     /// 
-    /// It should be used to handle progress information, and to implement a certain level of resilience.
+    /// ````text
+    ///                   It should be used to handle progress information, and to implement a certain level of resilience.````
     ///
     /// Sets the *delegate* property to the given value.
     pub fn delegate(mut self, new_value: &'a mut dyn client::Delegate) -> DriveGetCall<'a, S> {
@@ -7061,7 +7087,7 @@ where
 /// # extern crate google_drive3 as drive3;
 /// # async fn dox() {
 /// # use std::default::Default;
-/// # use drive3::{DriveHub, oauth2, hyper, hyper_rustls};
+/// # use drive3::{DriveHub, oauth2, hyper, hyper_rustls, chrono, FieldMask};
 /// 
 /// # let secret: oauth2::ApplicationSecret = Default::default();
 /// # let auth = oauth2::InstalledFlowAuthenticator::builder(
@@ -7255,7 +7281,8 @@ where
     /// The delegate implementation is consulted whenever there is an intermediate result, or if something goes wrong
     /// while executing the actual API request.
     /// 
-    /// It should be used to handle progress information, and to implement a certain level of resilience.
+    /// ````text
+    ///                   It should be used to handle progress information, and to implement a certain level of resilience.````
     ///
     /// Sets the *delegate* property to the given value.
     pub fn delegate(mut self, new_value: &'a mut dyn client::Delegate) -> DriveHideCall<'a, S> {
@@ -7326,7 +7353,7 @@ where
 /// # extern crate google_drive3 as drive3;
 /// # async fn dox() {
 /// # use std::default::Default;
-/// # use drive3::{DriveHub, oauth2, hyper, hyper_rustls};
+/// # use drive3::{DriveHub, oauth2, hyper, hyper_rustls, chrono, FieldMask};
 /// 
 /// # let secret: oauth2::ApplicationSecret = Default::default();
 /// # let auth = oauth2::InstalledFlowAuthenticator::builder(
@@ -7535,7 +7562,8 @@ where
     /// The delegate implementation is consulted whenever there is an intermediate result, or if something goes wrong
     /// while executing the actual API request.
     /// 
-    /// It should be used to handle progress information, and to implement a certain level of resilience.
+    /// ````text
+    ///                   It should be used to handle progress information, and to implement a certain level of resilience.````
     ///
     /// Sets the *delegate* property to the given value.
     pub fn delegate(mut self, new_value: &'a mut dyn client::Delegate) -> DriveListCall<'a, S> {
@@ -7606,7 +7634,7 @@ where
 /// # extern crate google_drive3 as drive3;
 /// # async fn dox() {
 /// # use std::default::Default;
-/// # use drive3::{DriveHub, oauth2, hyper, hyper_rustls};
+/// # use drive3::{DriveHub, oauth2, hyper, hyper_rustls, chrono, FieldMask};
 /// 
 /// # let secret: oauth2::ApplicationSecret = Default::default();
 /// # let auth = oauth2::InstalledFlowAuthenticator::builder(
@@ -7800,7 +7828,8 @@ where
     /// The delegate implementation is consulted whenever there is an intermediate result, or if something goes wrong
     /// while executing the actual API request.
     /// 
-    /// It should be used to handle progress information, and to implement a certain level of resilience.
+    /// ````text
+    ///                   It should be used to handle progress information, and to implement a certain level of resilience.````
     ///
     /// Sets the *delegate* property to the given value.
     pub fn delegate(mut self, new_value: &'a mut dyn client::Delegate) -> DriveUnhideCall<'a, S> {
@@ -7872,7 +7901,7 @@ where
 /// use drive3::api::Drive;
 /// # async fn dox() {
 /// # use std::default::Default;
-/// # use drive3::{DriveHub, oauth2, hyper, hyper_rustls};
+/// # use drive3::{DriveHub, oauth2, hyper, hyper_rustls, chrono, FieldMask};
 /// 
 /// # let secret: oauth2::ApplicationSecret = Default::default();
 /// # let auth = oauth2::InstalledFlowAuthenticator::builder(
@@ -8107,7 +8136,8 @@ where
     /// The delegate implementation is consulted whenever there is an intermediate result, or if something goes wrong
     /// while executing the actual API request.
     /// 
-    /// It should be used to handle progress information, and to implement a certain level of resilience.
+    /// ````text
+    ///                   It should be used to handle progress information, and to implement a certain level of resilience.````
     ///
     /// Sets the *delegate* property to the given value.
     pub fn delegate(mut self, new_value: &'a mut dyn client::Delegate) -> DriveUpdateCall<'a, S> {
@@ -8179,7 +8209,7 @@ where
 /// use drive3::api::File;
 /// # async fn dox() {
 /// # use std::default::Default;
-/// # use drive3::{DriveHub, oauth2, hyper, hyper_rustls};
+/// # use drive3::{DriveHub, oauth2, hyper, hyper_rustls, chrono, FieldMask};
 /// 
 /// # let secret: oauth2::ApplicationSecret = Default::default();
 /// # let auth = oauth2::InstalledFlowAuthenticator::builder(
@@ -8486,7 +8516,8 @@ where
     /// The delegate implementation is consulted whenever there is an intermediate result, or if something goes wrong
     /// while executing the actual API request.
     /// 
-    /// It should be used to handle progress information, and to implement a certain level of resilience.
+    /// ````text
+    ///                   It should be used to handle progress information, and to implement a certain level of resilience.````
     ///
     /// Sets the *delegate* property to the given value.
     pub fn delegate(mut self, new_value: &'a mut dyn client::Delegate) -> FileCopyCall<'a, S> {
@@ -8559,7 +8590,7 @@ where
 /// use std::fs;
 /// # async fn dox() {
 /// # use std::default::Default;
-/// # use drive3::{DriveHub, oauth2, hyper, hyper_rustls};
+/// # use drive3::{DriveHub, oauth2, hyper, hyper_rustls, chrono, FieldMask};
 /// 
 /// # let secret: oauth2::ApplicationSecret = Default::default();
 /// # let auth = oauth2::InstalledFlowAuthenticator::builder(
@@ -8958,7 +8989,8 @@ where
     /// The delegate implementation is consulted whenever there is an intermediate result, or if something goes wrong
     /// while executing the actual API request.
     /// 
-    /// It should be used to handle progress information, and to implement a certain level of resilience.
+    /// ````text
+    ///                   It should be used to handle progress information, and to implement a certain level of resilience.````
     ///
     /// Sets the *delegate* property to the given value.
     pub fn delegate(mut self, new_value: &'a mut dyn client::Delegate) -> FileCreateCall<'a, S> {
@@ -9029,7 +9061,7 @@ where
 /// # extern crate google_drive3 as drive3;
 /// # async fn dox() {
 /// # use std::default::Default;
-/// # use drive3::{DriveHub, oauth2, hyper, hyper_rustls};
+/// # use drive3::{DriveHub, oauth2, hyper, hyper_rustls, chrono, FieldMask};
 /// 
 /// # let secret: oauth2::ApplicationSecret = Default::default();
 /// # let auth = oauth2::InstalledFlowAuthenticator::builder(
@@ -9248,7 +9280,8 @@ where
     /// The delegate implementation is consulted whenever there is an intermediate result, or if something goes wrong
     /// while executing the actual API request.
     /// 
-    /// It should be used to handle progress information, and to implement a certain level of resilience.
+    /// ````text
+    ///                   It should be used to handle progress information, and to implement a certain level of resilience.````
     ///
     /// Sets the *delegate* property to the given value.
     pub fn delegate(mut self, new_value: &'a mut dyn client::Delegate) -> FileDeleteCall<'a, S> {
@@ -9319,7 +9352,7 @@ where
 /// # extern crate google_drive3 as drive3;
 /// # async fn dox() {
 /// # use std::default::Default;
-/// # use drive3::{DriveHub, oauth2, hyper, hyper_rustls};
+/// # use drive3::{DriveHub, oauth2, hyper, hyper_rustls, chrono, FieldMask};
 /// 
 /// # let secret: oauth2::ApplicationSecret = Default::default();
 /// # let auth = oauth2::InstalledFlowAuthenticator::builder(
@@ -9481,7 +9514,8 @@ where
     /// The delegate implementation is consulted whenever there is an intermediate result, or if something goes wrong
     /// while executing the actual API request.
     /// 
-    /// It should be used to handle progress information, and to implement a certain level of resilience.
+    /// ````text
+    ///                   It should be used to handle progress information, and to implement a certain level of resilience.````
     ///
     /// Sets the *delegate* property to the given value.
     pub fn delegate(mut self, new_value: &'a mut dyn client::Delegate) -> FileEmptyTrashCall<'a, S> {
@@ -9555,7 +9589,7 @@ where
 /// # extern crate google_drive3 as drive3;
 /// # async fn dox() {
 /// # use std::default::Default;
-/// # use drive3::{DriveHub, oauth2, hyper, hyper_rustls};
+/// # use drive3::{DriveHub, oauth2, hyper, hyper_rustls, chrono, FieldMask};
 /// 
 /// # let secret: oauth2::ApplicationSecret = Default::default();
 /// # let auth = oauth2::InstalledFlowAuthenticator::builder(
@@ -9750,7 +9784,8 @@ where
     /// The delegate implementation is consulted whenever there is an intermediate result, or if something goes wrong
     /// while executing the actual API request.
     /// 
-    /// It should be used to handle progress information, and to implement a certain level of resilience.
+    /// ````text
+    ///                   It should be used to handle progress information, and to implement a certain level of resilience.````
     ///
     /// Sets the *delegate* property to the given value.
     pub fn delegate(mut self, new_value: &'a mut dyn client::Delegate) -> FileExportCall<'a, S> {
@@ -9821,7 +9856,7 @@ where
 /// # extern crate google_drive3 as drive3;
 /// # async fn dox() {
 /// # use std::default::Default;
-/// # use drive3::{DriveHub, oauth2, hyper, hyper_rustls};
+/// # use drive3::{DriveHub, oauth2, hyper, hyper_rustls, chrono, FieldMask};
 /// 
 /// # let secret: oauth2::ApplicationSecret = Default::default();
 /// # let auth = oauth2::InstalledFlowAuthenticator::builder(
@@ -10018,7 +10053,8 @@ where
     /// The delegate implementation is consulted whenever there is an intermediate result, or if something goes wrong
     /// while executing the actual API request.
     /// 
-    /// It should be used to handle progress information, and to implement a certain level of resilience.
+    /// ````text
+    ///                   It should be used to handle progress information, and to implement a certain level of resilience.````
     ///
     /// Sets the *delegate* property to the given value.
     pub fn delegate(mut self, new_value: &'a mut dyn client::Delegate) -> FileGenerateIdCall<'a, S> {
@@ -10094,7 +10130,7 @@ where
 /// # extern crate google_drive3 as drive3;
 /// # async fn dox() {
 /// # use std::default::Default;
-/// # use drive3::{DriveHub, oauth2, hyper, hyper_rustls};
+/// # use drive3::{DriveHub, oauth2, hyper, hyper_rustls, chrono, FieldMask};
 /// 
 /// # let secret: oauth2::ApplicationSecret = Default::default();
 /// # let auth = oauth2::InstalledFlowAuthenticator::builder(
@@ -10352,7 +10388,8 @@ where
     /// The delegate implementation is consulted whenever there is an intermediate result, or if something goes wrong
     /// while executing the actual API request.
     /// 
-    /// It should be used to handle progress information, and to implement a certain level of resilience.
+    /// ````text
+    ///                   It should be used to handle progress information, and to implement a certain level of resilience.````
     ///
     /// Sets the *delegate* property to the given value.
     pub fn delegate(mut self, new_value: &'a mut dyn client::Delegate) -> FileGetCall<'a, S> {
@@ -10423,7 +10460,7 @@ where
 /// # extern crate google_drive3 as drive3;
 /// # async fn dox() {
 /// # use std::default::Default;
-/// # use drive3::{DriveHub, oauth2, hyper, hyper_rustls};
+/// # use drive3::{DriveHub, oauth2, hyper, hyper_rustls, chrono, FieldMask};
 /// 
 /// # let secret: oauth2::ApplicationSecret = Default::default();
 /// # let auth = oauth2::InstalledFlowAuthenticator::builder(
@@ -10752,7 +10789,8 @@ where
     /// The delegate implementation is consulted whenever there is an intermediate result, or if something goes wrong
     /// while executing the actual API request.
     /// 
-    /// It should be used to handle progress information, and to implement a certain level of resilience.
+    /// ````text
+    ///                   It should be used to handle progress information, and to implement a certain level of resilience.````
     ///
     /// Sets the *delegate* property to the given value.
     pub fn delegate(mut self, new_value: &'a mut dyn client::Delegate) -> FileListCall<'a, S> {
@@ -10825,7 +10863,7 @@ where
 /// use std::fs;
 /// # async fn dox() {
 /// # use std::default::Default;
-/// # use drive3::{DriveHub, oauth2, hyper, hyper_rustls};
+/// # use drive3::{DriveHub, oauth2, hyper, hyper_rustls, chrono, FieldMask};
 /// 
 /// # let secret: oauth2::ApplicationSecret = Default::default();
 /// # let auth = oauth2::InstalledFlowAuthenticator::builder(
@@ -11455,7 +11493,8 @@ where
     /// The delegate implementation is consulted whenever there is an intermediate result, or if something goes wrong
     /// while executing the actual API request.
     /// 
-    /// It should be used to handle progress information, and to implement a certain level of resilience.
+    /// ````text
+    ///                   It should be used to handle progress information, and to implement a certain level of resilience.````
     ///
     /// Sets the *delegate* property to the given value.
     pub fn delegate(mut self, new_value: &'a mut dyn client::Delegate) -> FileUpdateCall<'a, S> {
@@ -11532,7 +11571,7 @@ where
 /// use drive3::api::Channel;
 /// # async fn dox() {
 /// # use std::default::Default;
-/// # use drive3::{DriveHub, oauth2, hyper, hyper_rustls};
+/// # use drive3::{DriveHub, oauth2, hyper, hyper_rustls, chrono, FieldMask};
 /// 
 /// # let secret: oauth2::ApplicationSecret = Default::default();
 /// # let auth = oauth2::InstalledFlowAuthenticator::builder(
@@ -11819,7 +11858,8 @@ where
     /// The delegate implementation is consulted whenever there is an intermediate result, or if something goes wrong
     /// while executing the actual API request.
     /// 
-    /// It should be used to handle progress information, and to implement a certain level of resilience.
+    /// ````text
+    ///                   It should be used to handle progress information, and to implement a certain level of resilience.````
     ///
     /// Sets the *delegate* property to the given value.
     pub fn delegate(mut self, new_value: &'a mut dyn client::Delegate) -> FileWatchCall<'a, S> {
@@ -11891,7 +11931,7 @@ where
 /// use drive3::api::Permission;
 /// # async fn dox() {
 /// # use std::default::Default;
-/// # use drive3::{DriveHub, oauth2, hyper, hyper_rustls};
+/// # use drive3::{DriveHub, oauth2, hyper, hyper_rustls, chrono, FieldMask};
 /// 
 /// # let secret: oauth2::ApplicationSecret = Default::default();
 /// # let auth = oauth2::InstalledFlowAuthenticator::builder(
@@ -12210,7 +12250,8 @@ where
     /// The delegate implementation is consulted whenever there is an intermediate result, or if something goes wrong
     /// while executing the actual API request.
     /// 
-    /// It should be used to handle progress information, and to implement a certain level of resilience.
+    /// ````text
+    ///                   It should be used to handle progress information, and to implement a certain level of resilience.````
     ///
     /// Sets the *delegate* property to the given value.
     pub fn delegate(mut self, new_value: &'a mut dyn client::Delegate) -> PermissionCreateCall<'a, S> {
@@ -12281,7 +12322,7 @@ where
 /// # extern crate google_drive3 as drive3;
 /// # async fn dox() {
 /// # use std::default::Default;
-/// # use drive3::{DriveHub, oauth2, hyper, hyper_rustls};
+/// # use drive3::{DriveHub, oauth2, hyper, hyper_rustls, chrono, FieldMask};
 /// 
 /// # let secret: oauth2::ApplicationSecret = Default::default();
 /// # let auth = oauth2::InstalledFlowAuthenticator::builder(
@@ -12512,7 +12553,8 @@ where
     /// The delegate implementation is consulted whenever there is an intermediate result, or if something goes wrong
     /// while executing the actual API request.
     /// 
-    /// It should be used to handle progress information, and to implement a certain level of resilience.
+    /// ````text
+    ///                   It should be used to handle progress information, and to implement a certain level of resilience.````
     ///
     /// Sets the *delegate* property to the given value.
     pub fn delegate(mut self, new_value: &'a mut dyn client::Delegate) -> PermissionDeleteCall<'a, S> {
@@ -12583,7 +12625,7 @@ where
 /// # extern crate google_drive3 as drive3;
 /// # async fn dox() {
 /// # use std::default::Default;
-/// # use drive3::{DriveHub, oauth2, hyper, hyper_rustls};
+/// # use drive3::{DriveHub, oauth2, hyper, hyper_rustls, chrono, FieldMask};
 /// 
 /// # let secret: oauth2::ApplicationSecret = Default::default();
 /// # let auth = oauth2::InstalledFlowAuthenticator::builder(
@@ -12825,7 +12867,8 @@ where
     /// The delegate implementation is consulted whenever there is an intermediate result, or if something goes wrong
     /// while executing the actual API request.
     /// 
-    /// It should be used to handle progress information, and to implement a certain level of resilience.
+    /// ````text
+    ///                   It should be used to handle progress information, and to implement a certain level of resilience.````
     ///
     /// Sets the *delegate* property to the given value.
     pub fn delegate(mut self, new_value: &'a mut dyn client::Delegate) -> PermissionGetCall<'a, S> {
@@ -12896,7 +12939,7 @@ where
 /// # extern crate google_drive3 as drive3;
 /// # async fn dox() {
 /// # use std::default::Default;
-/// # use drive3::{DriveHub, oauth2, hyper, hyper_rustls};
+/// # use drive3::{DriveHub, oauth2, hyper, hyper_rustls, chrono, FieldMask};
 /// 
 /// # let secret: oauth2::ApplicationSecret = Default::default();
 /// # let auth = oauth2::InstalledFlowAuthenticator::builder(
@@ -13162,7 +13205,8 @@ where
     /// The delegate implementation is consulted whenever there is an intermediate result, or if something goes wrong
     /// while executing the actual API request.
     /// 
-    /// It should be used to handle progress information, and to implement a certain level of resilience.
+    /// ````text
+    ///                   It should be used to handle progress information, and to implement a certain level of resilience.````
     ///
     /// Sets the *delegate* property to the given value.
     pub fn delegate(mut self, new_value: &'a mut dyn client::Delegate) -> PermissionListCall<'a, S> {
@@ -13234,7 +13278,7 @@ where
 /// use drive3::api::Permission;
 /// # async fn dox() {
 /// # use std::default::Default;
-/// # use drive3::{DriveHub, oauth2, hyper, hyper_rustls};
+/// # use drive3::{DriveHub, oauth2, hyper, hyper_rustls, chrono, FieldMask};
 /// 
 /// # let secret: oauth2::ApplicationSecret = Default::default();
 /// # let auth = oauth2::InstalledFlowAuthenticator::builder(
@@ -13529,7 +13573,8 @@ where
     /// The delegate implementation is consulted whenever there is an intermediate result, or if something goes wrong
     /// while executing the actual API request.
     /// 
-    /// It should be used to handle progress information, and to implement a certain level of resilience.
+    /// ````text
+    ///                   It should be used to handle progress information, and to implement a certain level of resilience.````
     ///
     /// Sets the *delegate* property to the given value.
     pub fn delegate(mut self, new_value: &'a mut dyn client::Delegate) -> PermissionUpdateCall<'a, S> {
@@ -13601,7 +13646,7 @@ where
 /// use drive3::api::Reply;
 /// # async fn dox() {
 /// # use std::default::Default;
-/// # use drive3::{DriveHub, oauth2, hyper, hyper_rustls};
+/// # use drive3::{DriveHub, oauth2, hyper, hyper_rustls, chrono, FieldMask};
 /// 
 /// # let secret: oauth2::ApplicationSecret = Default::default();
 /// # let auth = oauth2::InstalledFlowAuthenticator::builder(
@@ -13836,7 +13881,8 @@ where
     /// The delegate implementation is consulted whenever there is an intermediate result, or if something goes wrong
     /// while executing the actual API request.
     /// 
-    /// It should be used to handle progress information, and to implement a certain level of resilience.
+    /// ````text
+    ///                   It should be used to handle progress information, and to implement a certain level of resilience.````
     ///
     /// Sets the *delegate* property to the given value.
     pub fn delegate(mut self, new_value: &'a mut dyn client::Delegate) -> ReplyCreateCall<'a, S> {
@@ -13907,7 +13953,7 @@ where
 /// # extern crate google_drive3 as drive3;
 /// # async fn dox() {
 /// # use std::default::Default;
-/// # use drive3::{DriveHub, oauth2, hyper, hyper_rustls};
+/// # use drive3::{DriveHub, oauth2, hyper, hyper_rustls, chrono, FieldMask};
 /// 
 /// # let secret: oauth2::ApplicationSecret = Default::default();
 /// # let auth = oauth2::InstalledFlowAuthenticator::builder(
@@ -14114,7 +14160,8 @@ where
     /// The delegate implementation is consulted whenever there is an intermediate result, or if something goes wrong
     /// while executing the actual API request.
     /// 
-    /// It should be used to handle progress information, and to implement a certain level of resilience.
+    /// ````text
+    ///                   It should be used to handle progress information, and to implement a certain level of resilience.````
     ///
     /// Sets the *delegate* property to the given value.
     pub fn delegate(mut self, new_value: &'a mut dyn client::Delegate) -> ReplyDeleteCall<'a, S> {
@@ -14185,7 +14232,7 @@ where
 /// # extern crate google_drive3 as drive3;
 /// # async fn dox() {
 /// # use std::default::Default;
-/// # use drive3::{DriveHub, oauth2, hyper, hyper_rustls};
+/// # use drive3::{DriveHub, oauth2, hyper, hyper_rustls, chrono, FieldMask};
 /// 
 /// # let secret: oauth2::ApplicationSecret = Default::default();
 /// # let auth = oauth2::InstalledFlowAuthenticator::builder(
@@ -14415,7 +14462,8 @@ where
     /// The delegate implementation is consulted whenever there is an intermediate result, or if something goes wrong
     /// while executing the actual API request.
     /// 
-    /// It should be used to handle progress information, and to implement a certain level of resilience.
+    /// ````text
+    ///                   It should be used to handle progress information, and to implement a certain level of resilience.````
     ///
     /// Sets the *delegate* property to the given value.
     pub fn delegate(mut self, new_value: &'a mut dyn client::Delegate) -> ReplyGetCall<'a, S> {
@@ -14486,7 +14534,7 @@ where
 /// # extern crate google_drive3 as drive3;
 /// # async fn dox() {
 /// # use std::default::Default;
-/// # use drive3::{DriveHub, oauth2, hyper, hyper_rustls};
+/// # use drive3::{DriveHub, oauth2, hyper, hyper_rustls, chrono, FieldMask};
 /// 
 /// # let secret: oauth2::ApplicationSecret = Default::default();
 /// # let auth = oauth2::InstalledFlowAuthenticator::builder(
@@ -14728,7 +14776,8 @@ where
     /// The delegate implementation is consulted whenever there is an intermediate result, or if something goes wrong
     /// while executing the actual API request.
     /// 
-    /// It should be used to handle progress information, and to implement a certain level of resilience.
+    /// ````text
+    ///                   It should be used to handle progress information, and to implement a certain level of resilience.````
     ///
     /// Sets the *delegate* property to the given value.
     pub fn delegate(mut self, new_value: &'a mut dyn client::Delegate) -> ReplyListCall<'a, S> {
@@ -14800,7 +14849,7 @@ where
 /// use drive3::api::Reply;
 /// # async fn dox() {
 /// # use std::default::Default;
-/// # use drive3::{DriveHub, oauth2, hyper, hyper_rustls};
+/// # use drive3::{DriveHub, oauth2, hyper, hyper_rustls, chrono, FieldMask};
 /// 
 /// # let secret: oauth2::ApplicationSecret = Default::default();
 /// # let auth = oauth2::InstalledFlowAuthenticator::builder(
@@ -15047,7 +15096,8 @@ where
     /// The delegate implementation is consulted whenever there is an intermediate result, or if something goes wrong
     /// while executing the actual API request.
     /// 
-    /// It should be used to handle progress information, and to implement a certain level of resilience.
+    /// ````text
+    ///                   It should be used to handle progress information, and to implement a certain level of resilience.````
     ///
     /// Sets the *delegate* property to the given value.
     pub fn delegate(mut self, new_value: &'a mut dyn client::Delegate) -> ReplyUpdateCall<'a, S> {
@@ -15118,7 +15168,7 @@ where
 /// # extern crate google_drive3 as drive3;
 /// # async fn dox() {
 /// # use std::default::Default;
-/// # use drive3::{DriveHub, oauth2, hyper, hyper_rustls};
+/// # use drive3::{DriveHub, oauth2, hyper, hyper_rustls, chrono, FieldMask};
 /// 
 /// # let secret: oauth2::ApplicationSecret = Default::default();
 /// # let auth = oauth2::InstalledFlowAuthenticator::builder(
@@ -15313,7 +15363,8 @@ where
     /// The delegate implementation is consulted whenever there is an intermediate result, or if something goes wrong
     /// while executing the actual API request.
     /// 
-    /// It should be used to handle progress information, and to implement a certain level of resilience.
+    /// ````text
+    ///                   It should be used to handle progress information, and to implement a certain level of resilience.````
     ///
     /// Sets the *delegate* property to the given value.
     pub fn delegate(mut self, new_value: &'a mut dyn client::Delegate) -> RevisionDeleteCall<'a, S> {
@@ -15389,7 +15440,7 @@ where
 /// # extern crate google_drive3 as drive3;
 /// # async fn dox() {
 /// # use std::default::Default;
-/// # use drive3::{DriveHub, oauth2, hyper, hyper_rustls};
+/// # use drive3::{DriveHub, oauth2, hyper, hyper_rustls, chrono, FieldMask};
 /// 
 /// # let secret: oauth2::ApplicationSecret = Default::default();
 /// # let auth = oauth2::InstalledFlowAuthenticator::builder(
@@ -15623,7 +15674,8 @@ where
     /// The delegate implementation is consulted whenever there is an intermediate result, or if something goes wrong
     /// while executing the actual API request.
     /// 
-    /// It should be used to handle progress information, and to implement a certain level of resilience.
+    /// ````text
+    ///                   It should be used to handle progress information, and to implement a certain level of resilience.````
     ///
     /// Sets the *delegate* property to the given value.
     pub fn delegate(mut self, new_value: &'a mut dyn client::Delegate) -> RevisionGetCall<'a, S> {
@@ -15694,7 +15746,7 @@ where
 /// # extern crate google_drive3 as drive3;
 /// # async fn dox() {
 /// # use std::default::Default;
-/// # use drive3::{DriveHub, oauth2, hyper, hyper_rustls};
+/// # use drive3::{DriveHub, oauth2, hyper, hyper_rustls, chrono, FieldMask};
 /// 
 /// # let secret: oauth2::ApplicationSecret = Default::default();
 /// # let auth = oauth2::InstalledFlowAuthenticator::builder(
@@ -15912,7 +15964,8 @@ where
     /// The delegate implementation is consulted whenever there is an intermediate result, or if something goes wrong
     /// while executing the actual API request.
     /// 
-    /// It should be used to handle progress information, and to implement a certain level of resilience.
+    /// ````text
+    ///                   It should be used to handle progress information, and to implement a certain level of resilience.````
     ///
     /// Sets the *delegate* property to the given value.
     pub fn delegate(mut self, new_value: &'a mut dyn client::Delegate) -> RevisionListCall<'a, S> {
@@ -15984,7 +16037,7 @@ where
 /// use drive3::api::Revision;
 /// # async fn dox() {
 /// # use std::default::Default;
-/// # use drive3::{DriveHub, oauth2, hyper, hyper_rustls};
+/// # use drive3::{DriveHub, oauth2, hyper, hyper_rustls, chrono, FieldMask};
 /// 
 /// # let secret: oauth2::ApplicationSecret = Default::default();
 /// # let auth = oauth2::InstalledFlowAuthenticator::builder(
@@ -16219,7 +16272,8 @@ where
     /// The delegate implementation is consulted whenever there is an intermediate result, or if something goes wrong
     /// while executing the actual API request.
     /// 
-    /// It should be used to handle progress information, and to implement a certain level of resilience.
+    /// ````text
+    ///                   It should be used to handle progress information, and to implement a certain level of resilience.````
     ///
     /// Sets the *delegate* property to the given value.
     pub fn delegate(mut self, new_value: &'a mut dyn client::Delegate) -> RevisionUpdateCall<'a, S> {
@@ -16291,7 +16345,7 @@ where
 /// use drive3::api::TeamDrive;
 /// # async fn dox() {
 /// # use std::default::Default;
-/// # use drive3::{DriveHub, oauth2, hyper, hyper_rustls};
+/// # use drive3::{DriveHub, oauth2, hyper, hyper_rustls, chrono, FieldMask};
 /// 
 /// # let secret: oauth2::ApplicationSecret = Default::default();
 /// # let auth = oauth2::InstalledFlowAuthenticator::builder(
@@ -16493,7 +16547,8 @@ where
     /// The delegate implementation is consulted whenever there is an intermediate result, or if something goes wrong
     /// while executing the actual API request.
     /// 
-    /// It should be used to handle progress information, and to implement a certain level of resilience.
+    /// ````text
+    ///                   It should be used to handle progress information, and to implement a certain level of resilience.````
     ///
     /// Sets the *delegate* property to the given value.
     pub fn delegate(mut self, new_value: &'a mut dyn client::Delegate) -> TeamdriveCreateCall<'a, S> {
@@ -16564,7 +16619,7 @@ where
 /// # extern crate google_drive3 as drive3;
 /// # async fn dox() {
 /// # use std::default::Default;
-/// # use drive3::{DriveHub, oauth2, hyper, hyper_rustls};
+/// # use drive3::{DriveHub, oauth2, hyper, hyper_rustls, chrono, FieldMask};
 /// 
 /// # let secret: oauth2::ApplicationSecret = Default::default();
 /// # let auth = oauth2::InstalledFlowAuthenticator::builder(
@@ -16747,7 +16802,8 @@ where
     /// The delegate implementation is consulted whenever there is an intermediate result, or if something goes wrong
     /// while executing the actual API request.
     /// 
-    /// It should be used to handle progress information, and to implement a certain level of resilience.
+    /// ````text
+    ///                   It should be used to handle progress information, and to implement a certain level of resilience.````
     ///
     /// Sets the *delegate* property to the given value.
     pub fn delegate(mut self, new_value: &'a mut dyn client::Delegate) -> TeamdriveDeleteCall<'a, S> {
@@ -16818,7 +16874,7 @@ where
 /// # extern crate google_drive3 as drive3;
 /// # async fn dox() {
 /// # use std::default::Default;
-/// # use drive3::{DriveHub, oauth2, hyper, hyper_rustls};
+/// # use drive3::{DriveHub, oauth2, hyper, hyper_rustls, chrono, FieldMask};
 /// 
 /// # let secret: oauth2::ApplicationSecret = Default::default();
 /// # let auth = oauth2::InstalledFlowAuthenticator::builder(
@@ -17024,7 +17080,8 @@ where
     /// The delegate implementation is consulted whenever there is an intermediate result, or if something goes wrong
     /// while executing the actual API request.
     /// 
-    /// It should be used to handle progress information, and to implement a certain level of resilience.
+    /// ````text
+    ///                   It should be used to handle progress information, and to implement a certain level of resilience.````
     ///
     /// Sets the *delegate* property to the given value.
     pub fn delegate(mut self, new_value: &'a mut dyn client::Delegate) -> TeamdriveGetCall<'a, S> {
@@ -17095,7 +17152,7 @@ where
 /// # extern crate google_drive3 as drive3;
 /// # async fn dox() {
 /// # use std::default::Default;
-/// # use drive3::{DriveHub, oauth2, hyper, hyper_rustls};
+/// # use drive3::{DriveHub, oauth2, hyper, hyper_rustls, chrono, FieldMask};
 /// 
 /// # let secret: oauth2::ApplicationSecret = Default::default();
 /// # let auth = oauth2::InstalledFlowAuthenticator::builder(
@@ -17304,7 +17361,8 @@ where
     /// The delegate implementation is consulted whenever there is an intermediate result, or if something goes wrong
     /// while executing the actual API request.
     /// 
-    /// It should be used to handle progress information, and to implement a certain level of resilience.
+    /// ````text
+    ///                   It should be used to handle progress information, and to implement a certain level of resilience.````
     ///
     /// Sets the *delegate* property to the given value.
     pub fn delegate(mut self, new_value: &'a mut dyn client::Delegate) -> TeamdriveListCall<'a, S> {
@@ -17376,7 +17434,7 @@ where
 /// use drive3::api::TeamDrive;
 /// # async fn dox() {
 /// # use std::default::Default;
-/// # use drive3::{DriveHub, oauth2, hyper, hyper_rustls};
+/// # use drive3::{DriveHub, oauth2, hyper, hyper_rustls, chrono, FieldMask};
 /// 
 /// # let secret: oauth2::ApplicationSecret = Default::default();
 /// # let auth = oauth2::InstalledFlowAuthenticator::builder(
@@ -17611,7 +17669,8 @@ where
     /// The delegate implementation is consulted whenever there is an intermediate result, or if something goes wrong
     /// while executing the actual API request.
     /// 
-    /// It should be used to handle progress information, and to implement a certain level of resilience.
+    /// ````text
+    ///                   It should be used to handle progress information, and to implement a certain level of resilience.````
     ///
     /// Sets the *delegate* property to the given value.
     pub fn delegate(mut self, new_value: &'a mut dyn client::Delegate) -> TeamdriveUpdateCall<'a, S> {
