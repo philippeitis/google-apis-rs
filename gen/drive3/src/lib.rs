@@ -124,7 +124,7 @@
 //! use drive3::{Result, Error};
 //! # async fn dox() {
 //! use std::default::Default;
-//! use drive3::{DriveHub, oauth2, hyper, hyper_rustls};
+//! use drive3::{DriveHub, oauth2, hyper, hyper_rustls, chrono, FieldMask};
 //! 
 //! // Get an ApplicationSecret instance by some means. It contains the `client_id` and 
 //! // `client_secret`, among other things.
@@ -246,10 +246,10 @@
 pub use hyper;
 pub use hyper_rustls;
 pub extern crate google_apis_common as client;
-
+pub use client::chrono;
 pub mod api;
 
 // Re-export the hub type and some basic client structs
 pub use api::DriveHub;
 // Re-export the yup_oauth2 crate, that is required to call some methods of the hub and the client
-pub use client::{Result, Error, Delegate, oauth2};
+pub use client::{Result, Error, Delegate, oauth2, FieldMask};
