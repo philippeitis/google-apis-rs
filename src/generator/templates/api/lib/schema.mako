@@ -23,6 +23,8 @@ ${struct} {
     #[serde(with = "client::serde::duration")]
     % elif p.get("format") == "google-fieldmask":
     #[serde(with = "client::serde::field_mask")]
+    % elif p.get("format") in {"uint64", "int64"} and p["type"] == "string":
+    #[serde(with = "client::serde::str_like")]
     % endif
     pub ${mangle_ident(pn)}: ${to_rust_type(schemas, s.id, pn, p, allow_optionals=allow_optionals)},
 % endfor
