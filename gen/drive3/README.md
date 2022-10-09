@@ -123,7 +123,7 @@ extern crate hyper_rustls;
 extern crate google_drive3 as drive3;
 use drive3::{Result, Error};
 use std::default::Default;
-use drive3::{DriveHub, oauth2, hyper, hyper_rustls};
+use drive3::{DriveHub, oauth2, hyper, hyper_rustls, chrono, FieldMask};
 
 // Get an ApplicationSecret instance by some means. It contains the `client_id` and 
 // `client_secret`, among other things.
