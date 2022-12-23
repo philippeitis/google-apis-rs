@@ -1,12 +1,11 @@
-import generator.lib.util as util
-
 import os
 import re
 import collections
 from copy import deepcopy
 from random import (randint, random, choice)
 
-from generator.lib import types
+from generator.lib import types, util
+from generator.lib.filters import camel_to_under
 
 SPLIT_START = '>>>>>>>'
 SPLIT_END = '<<<<<<<'
@@ -107,7 +106,7 @@ def is_request_value_property(mc, p):
 
 # transform name to be a suitable subcommand
 def mangle_subcommand(name):
-    return util.camel_to_under(name).replace('_', '-').replace('.', '-')
+    return camel_to_under(name).replace('_', '-').replace('.', '-')
 
 def ident(name):
     return mangle_subcommand(name).replace('-', '_')

@@ -1,5 +1,6 @@
 <%
-	from generator.lib.util import (markdown_comment, new_context)
+	from generator.lib.util import new_context
+	from generator.lib.filters import markdown_comment
 	c = new_context(schemas, resources)
 %>\
 <%namespace name="lib" file="lib/lib.mako"/>\

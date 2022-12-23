@@ -2,8 +2,8 @@
 <%namespace name="engine" file="lib/engine.mako"/>\
 <%namespace name="util" file="../../lib/util.mako"/>\
 <%  
-    from generator.lib.util import (new_context, rust_comment, to_extern_crate_name, library_to_crate_name, library_name,
-                      indent_all_but_first_by)
+    from generator.lib.util import (new_context, to_extern_crate_name, library_to_crate_name, library_name)
+    from generator.lib.filters import (rust_comment, indent_all_but_first_by)
     from generator.lib.cli import OUT_ARG, DEBUG_FLAG, opt_value
 
     c = new_context(schemas, resources)

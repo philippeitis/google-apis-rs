@@ -1,7 +1,16 @@
-from .rust_type import Base, HashMap, Vec
 from random import randint, random, choice, seed
 
+from .filters import camel_to_under
+from .rust_type import Base, Option, Box, Vec, HashMap, RustType
+
 seed(1337)
+
+TREF = '$ref'
+RESERVED_WORDS = set(('abstract', 'alignof', 'as', 'become', 'box', 'break', 'const', 'continue', 'crate', 'do',
+                      'else', 'enum', 'extern', 'false', 'final', 'fn', 'for', 'if', 'impl', 'in', 'let', 'loop',
+                      'macro', 'match', 'mod', 'move', 'mut', 'offsetof', 'override', 'priv', 'pub', 'pure', 'ref',
+                      'return', 'sizeof', 'static', 'self', 'struct', 'super', 'true', 'trait', 'type', 'typeof',
+                      'unsafe', 'unsized', 'use', 'virtual', 'where', 'while', 'yield'))
 
 WORDS = [
     w.strip(',') for w in
@@ -93,5 +102,122 @@ JSON_TO_RUST_DEFAULT = {
     "google-fieldmask": "FieldMask::default()"
 }
 
-
 assert set(JSON_TO_RUST_DEFAULT.keys()).issubset(set(RUST_TYPE_MAP.keys()))
+
+
+# ==============================================================================
+## @name Rust TypeSystem
+# ------------------------------------------------------------------------------
+## @{
+
+def capitalize(s):
+    return s[:1].upper() + s[1:]
+
+
+# Return transformed string that could make a good type name
+def canonical_type_name(s):
+    # can't use s.capitalize() as it will lower-case the remainder of the string
+    s = ''.join(capitalize(t) for t in s.split(' '))
+    s = ''.join(capitalize(t) for t in s.split('_'))
+    s = ''.join(capitalize(t) for t in s.split('-'))
+    return capitalize(s)
+
+
+def nested_type_name(sn, pn):
+    suffix = canonical_type_name(pn)
+    return sn + suffix
+
+
+# Make properties which are reserved keywords usable
+def mangle_ident(n):
+    n = camel_to_under(n).replace('-', '.').replace('.', '_').replace('$', '')
+    if n in RESERVED_WORDS:
+        return n + '_'
+    return n
+
+
+def is_map_prop(p):
+    return 'additionalProperties' in p
+
+
+def _assure_unique_type_name(schemas, tn):
+    if tn in schemas:
+        tn += 'Nested'
+        assert tn not in schemas
+    return tn
+
+
+# map a json type to a Rust type
+# t = type dict
+# NOTE: In case you don't understand how this algorithm really works ... me neither - THE AUTHOR
+def to_rust_type(
+        schemas,
+        schema_name,
+        property_name,
+        t,
+        allow_optionals=True,
+        _is_recursive=False
+) -> RustType:
+    def nested_type(nt) -> RustType:
+        if 'items' in nt:
+            nt = nt['items']
+        elif 'additionalProperties' in nt:
+            nt = nt['additionalProperties']
+        else:
+            assert is_nested_type_property(nt)
+            # It's a nested type - we take it literally like $ref, but generate a name for the type ourselves
+            return Base(_assure_unique_type_name(schemas, nested_type_name(schema_name, property_name)))
+        return to_rust_type(schemas, schema_name, property_name, nt, allow_optionals=False, _is_recursive=True)
+
+    def wrap_type(rt) -> RustType:
+        if allow_optionals:
+            return Option(rt)
+        return rt
+
+    # unconditionally handle $ref types, which should point to another schema.
+    if TREF in t:
+        # simple, non-recursive fix for some recursive types. This only works on the first depth level
+        # which is fine for now. 'allow_optionals' implicitly restricts type boxing for simple types - it
+        # is usually on the first call, and off when recursion is involved.
+        tn = t[TREF]
+        rt = Base(tn)
+        if not _is_recursive and tn == schema_name:
+            rt = Option(Box(rt))
+        return wrap_type(rt)
+    try:
+        # prefer format if present
+        rust_type = RUST_TYPE_MAP[t.get("format", t["type"])]
+        if rust_type == Vec(None):
+            return wrap_type(Vec(nested_type(t)))
+        if rust_type == HashMap(None, None):
+            if is_map_prop(t):
+                return wrap_type(HashMap(Base("String"), nested_type(t)))
+            return wrap_type(nested_type(t))
+        if t.get('repeated', False):
+            return Vec(rust_type)
+        return wrap_type(rust_type)
+    except KeyError as err:
+        raise AssertionError(
+            "%s: Property type '%s' unknown - add new type mapping: %s" % (str(err), t['type'], str(t)))
+    except AttributeError as err:
+        raise AssertionError("%s: unknown dict layout: %s" % (str(err), t))
+
+
+# return True if this property is actually a nested type
+def is_nested_type_property(t):
+    return 'type' in t and t['type'] == 'object' and 'properties' in t or ('items' in t and 'properties' in t['items'])
+
+
+# Return True if the schema is nested
+def is_nested_type(s):
+    return len(s.parents) > 0
+
+
+# given a rust type-name (no optional, as from to_rust_type), you will get a suitable random default value
+# as string suitable to be passed as reference (or copy, where applicable)
+def rnd_arg_val_for_type(tn):
+    try:
+        return str(RUST_TYPE_RND_MAP[str(tn)]())
+    except KeyError:
+        return '&Default::default()'
+## -- End Rust TypeSystem -- @}

@@ -1,19 +1,23 @@
 <%!
-    from generator.lib.util import (put_and, rust_test_fn_invisible, rust_doc_test_norun, rust_doc_comment,
-                      rb_type, mb_type, singular, hub_type, to_fqan, indent_all_but_first_by,
-                      activity_rust_type, mangle_ident, activity_input_type, get_word,
-                      split_camelcase_s, property, is_pod_property, TREF, IO_REQUEST,
+    from generator.lib.util import (rb_type, mb_type, hub_type, to_fqan,
+                      activity_rust_type, activity_input_type, get_word,
+                      property, is_pod_property, TREF, IO_REQUEST,
                       schema_to_required_property, rust_copy_value_s, is_required_property,
-                      hide_rust_doc_test, build_all_params, REQUEST_VALUE_PROPERTY_NAME, organize_params,
-                      indent_by, to_rust_type, rnd_arg_val_for_type, extract_parts, mb_type_params_s,
-                      hub_type_params_s, method_media_params, enclose_in, method_response,
-                      CALL_BUILDER_MARKERT_TRAIT, pass_through, markdown_rust_block, parts_from_params,
+                      build_all_params, REQUEST_VALUE_PROPERTY_NAME, organize_params,
+                      to_rust_type, mb_type_params_s,
+                      hub_type_params_s, method_media_params, method_response,
+                      CALL_BUILDER_MARKERT_TRAIT, parts_from_params,
                       DELEGATE_PROPERTY_NAME, struct_type_bounds_s, scope_url_to_variant,
-                      re_find_replacements, ADD_PARAM_FN, ADD_PARAM_MEDIA_EXAMPLE, upload_action_fn, METHODS_RESOURCE,
+                      ADD_PARAM_FN, ADD_PARAM_MEDIA_EXAMPLE, upload_action_fn, METHODS_RESOURCE,
                       method_name_to_variant, size_to_bytes, method_default_scope,
-                      is_repeated_property, setter_fn_name, ADD_SCOPE_FN, ADD_SCOPES_FN, rust_doc_sanitize,
+                      is_repeated_property, setter_fn_name, ADD_SCOPE_FN, ADD_SCOPES_FN,
                       CLEAR_SCOPES_FN, items, string_impl)
 
+    from generator.lib.types import mangle_ident, rnd_arg_val_for_type
+
+    from generator.lib.filters import (put_and, singular, rust_test_fn_invisible, rust_doc_test_norun, rust_doc_comment,
+                    indent_all_but_first_by, split_camelcase_s, hide_rust_doc_test, rust_doc_sanitize, indent_by,
+                    extract_parts, enclose_in, pass_through, markdown_rust_block, re_find_replacements)
     SIMPLE = "simple"
     RESUMABLE = "resumable"
     PROTOCOL_TYPE_MAP = {
@@ -300,7 +304,7 @@ ${self._setter_fn(resource, method, m, p, part_prop, ThisType, c)}\
     def trv(spn, sp, sn=None):
         prev = sp.get('repeated', False)
         sp.repeated = False
-        res = to_rust_type(schemas, sn, spn, sp, allow_optionals=False)
+        res = str(to_rust_type(schemas, sn, spn, sp, allow_optionals=False))
         sp.repeated = prev
         return res
     # rvfrt = random value for rust type

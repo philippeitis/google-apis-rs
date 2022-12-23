@@ -76,7 +76,7 @@ class UtilsTest(unittest.TestCase):
         property_name = None
         property_value = {'$ref': 'Album'}
         rust_type = to_rust_type(schemas, class_name, property_name, property_value, allow_optionals=False)
-        self.assertEqual(rust_type, 'Album')
+        self.assertEqual(str(rust_type), 'Album')
 
         # Get properties
         test_properties = (
@@ -90,21 +90,21 @@ class UtilsTest(unittest.TestCase):
         for (class_name, property_name, expected) in test_properties:
             property_value = schemas[class_name]['properties'][property_name]
             rust_type = to_rust_type(schemas, class_name, property_name, property_value, allow_optionals=False)
-            self.assertEqual(rust_type, expected, f"Parsed class: {class_name}, property: {property_name}")
+            self.assertEqual(str(rust_type), expected, f"Parsed class: {class_name}, property: {property_name}")
 
         # items reference
         class_name = 'SearchMediaItemsResponse'
         property_name = 'mediaItems'
         property_value = schemas[class_name]['properties'][property_name]
         rust_type = to_rust_type(schemas, class_name, property_name, property_value, allow_optionals=True)
-        self.assertEqual(rust_type, 'Option<Vec<MediaItem>>')
+        self.assertEqual(str(rust_type), 'Option<Vec<MediaItem>>')
 
         # additionalProperties reference
         class_name = 'Status'
         property_name = 'details'
         property_value = schemas[class_name]['properties'][property_name]
         rust_type = to_rust_type(schemas, class_name, property_name, property_value, allow_optionals=True)
-        self.assertEqual(rust_type, 'Option<Vec<HashMap<String, String>>>')
+        self.assertEqual(str(rust_type), 'Option<Vec<HashMap<String, String>>>')
 
 
 def main():

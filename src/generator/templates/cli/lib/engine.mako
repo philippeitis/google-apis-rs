@@ -1,8 +1,10 @@
 <%namespace name="util" file="../../../lib/util.mako"/>\
 <%!
-    from generator.lib.util import (hub_type, mangle_ident, indent_all_but_first_by, activity_rust_type, setter_fn_name, ADD_PARAM_FN,
-                      upload_action_fn, is_schema_with_optionals, schema_markers, indent_by, method_default_scope,
-                      ADD_SCOPE_FN, TREF, enclose_in)
+    from generator.lib.util import (hub_type, activity_rust_type, setter_fn_name, ADD_PARAM_FN,
+                      upload_action_fn, is_schema_with_optionals, schema_markers, method_default_scope,
+                      ADD_SCOPE_FN, TREF)
+    from generator.lib.types import mangle_ident
+    from generator.lib.filters import indent_all_but_first_by, indent_by, enclose_in
     from generator.lib.cli import (mangle_subcommand, new_method_context, PARAM_FLAG, STRUCT_FLAG, OUTPUT_FLAG, VALUE_ARG,
                      CONFIG_DIR, SCOPE_FLAG, is_request_value_property, FIELD_SEP, docopt_mode, FILE_ARG, MIME_ARG, OUT_ARG,
                      call_method_ident, POD_TYPES, opt_value, ident,

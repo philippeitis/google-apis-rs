@@ -1,7 +1,8 @@
 <%namespace name="util" file="../../../lib/util.mako"/>\
 <%!
     from mako.filters import xml_escape
-    from generator.lib.util import (hash_comment, new_context, method_default_scope, indent_all_but_first_by, is_repeated_property, custom_sorted)
+    from generator.lib.util import (new_context, custom_sorted, method_default_scope, is_repeated_property)
+    from generator.lib.filters import (hash_comment, indent_all_but_first_by)
     from generator.lib.cli import (subcommand_md_filename, new_method_context, SPLIT_START, SPLIT_END, pretty, SCOPE_FLAG,
                      mangle_subcommand, is_request_value_property, FIELD_SEP, PARAM_FLAG, UPLOAD_FLAG, docopt_mode,
                      FILE_ARG, MIME_ARG, OUT_ARG, OUTPUT_FLAG, to_cli_schema, cli_schema_to_yaml, SchemaEntry,

@@ -1,13 +1,17 @@
 <%!
-    from generator.lib.util import (activity_split, put_and, md_italic, split_camelcase_s, canonical_type_name, hub_type,
-                      rust_test_fn_invisible, rust_doc_test_norun, rust_doc_comment, markdown_rust_block,
-                      unindent_first_by, mangle_ident, mb_type, singular, scope_url_to_variant,
+    from generator.lib.util import (activity_split, hub_type,
+                      mb_type, scope_url_to_variant,
                       PART_MARKER_TRAIT, RESOURCE_MARKER_TRAIT, CALL_BUILDER_MARKERT_TRAIT, 
-                      find_fattest_resource, build_all_params, pass_through, parts_from_params,
+                      find_fattest_resource, build_all_params, parts_from_params,
                       REQUEST_MARKER_TRAIT, RESPONSE_MARKER_TRAIT, supports_scopes, to_api_version,
-                      to_fqan, METHODS_RESOURCE, ADD_PARAM_MEDIA_EXAMPLE, PROTOCOL_TYPE_INFO, enclose_in,
+                      to_fqan, METHODS_RESOURCE, ADD_PARAM_MEDIA_EXAMPLE, PROTOCOL_TYPE_INFO,
                       upload_action_fn, METHODS_BUILDER_MARKER_TRAIT, DELEGATE_TYPE,
-                      to_extern_crate_name, rust_doc_sanitize)  
+                      to_extern_crate_name)
+
+    from generator.lib.types import canonical_type_name, mangle_ident
+    from generator.lib.filters import (split_camelcase_s, md_italic, put_and, rust_test_fn_invisible,
+                    rust_doc_test_norun, rust_doc_comment, markdown_rust_block, unindent_first_by, pass_through,
+                    rust_doc_sanitize, singular, enclose_in)
 
     def pretty_name(name):
         return ' '.join(split_camelcase_s(name).split('.'))

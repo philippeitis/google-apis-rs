@@ -1,9 +1,13 @@
 <%!
-    from generator.lib.util import (schema_markers, rust_doc_comment, mangle_ident, to_serde_type, to_rust_type, put_and,
-                      IO_TYPES, activity_split, enclose_in, REQUEST_MARKER_TRAIT, mb_type, indent_all_but_first_by,
-                      NESTED_TYPE_SUFFIX, RESPONSE_MARKER_TRAIT, split_camelcase_s, METHODS_RESOURCE,
-                      PART_MARKER_TRAIT, canonical_type_name, TO_PARTS_MARKER, UNUSED_TYPE_MARKER, is_schema_with_optionals,
-                      rust_doc_sanitize, items)
+    from generator.lib.util import (schema_markers, IO_TYPES, activity_split, REQUEST_MARKER_TRAIT, mb_type,
+                      NESTED_TYPE_SUFFIX, RESPONSE_MARKER_TRAIT, METHODS_RESOURCE,
+                      PART_MARKER_TRAIT, canonical_type_name, TO_PARTS_MARKER, UNUSED_TYPE_MARKER,
+                      is_schema_with_optionals, items)
+
+    from generator.lib.types import to_rust_type, Vec, HashMap, mangle_ident
+    from generator.lib.filters import (rust_doc_comment, put_and, enclose_in, rust_doc_sanitize, split_camelcase_s,
+                indent_all_but_first_by)
+
 %>\
 ## Build a schema which must be an object
 ###################################################################################################################
@@ -19,7 +23,7 @@ ${struct} {
     % endif
     <%
         rust_ty = to_rust_type(schemas, s.id, pn, p, allow_optionals=allow_optionals)
-        serde_ty, use_custom_serde = to_serde_type(schemas, s.id, pn, p, allow_optionals=allow_optionals)
+        serde_ty, use_custom_serde = rust_ty.serde_as()
     %>
     % if use_custom_serde:
     #[serde_as(as = "${serde_ty}")]
@@ -124,7 +128,7 @@ impl ${TO_PARTS_MARKER} for ${s_type} {
             mn = 'self.' + mangle_ident(pn)
             rt = to_rust_type(schemas, s.id, pn, p, allow_optionals=allow_optionals)
             check = 'is_some()'
-            if rt.startswith('Vec') or rt.startswith('HashMap'):
+            if isinstance(rt, Vec) or isinstance(rt, HashMap):
                 check = 'len() > 0'
 %>\
         if ${mn}.${check} { r = r + "${pn},"; }

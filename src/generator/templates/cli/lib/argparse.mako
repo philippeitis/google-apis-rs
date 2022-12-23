@@ -2,7 +2,8 @@
 <%!
     import os
 
-    from generator.lib.util import (put_and, supports_scopes, api_index, indent_by, enclose_in, put_and, escape_rust_string)
+    from generator.lib.util import (supports_scopes, api_index)
+    from generator.lib.filters import indent_by, enclose_in, put_and, escape_rust_string
     from generator.lib.cli import (mangle_subcommand, new_method_context, PARAM_FLAG, STRUCT_FLAG, UPLOAD_FLAG, OUTPUT_FLAG, VALUE_ARG,
                      CONFIG_DIR, SCOPE_FLAG, is_request_value_property, FIELD_SEP, docopt_mode, FILE_ARG, MIME_ARG, OUT_ARG,
                      CONFIG_DIR_FLAG, KEY_VALUE_ARG, to_docopt_arg, DEBUG_FLAG, MODE_ARG, SCOPE_ARG,

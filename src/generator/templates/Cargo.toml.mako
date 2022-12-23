@@ -1,4 +1,7 @@
-<%! from generator.lib.util import (estr, enclose_in, hash_comment, library_to_crate_name, to_extern_crate_name) %>\
+<%!
+    from generator.lib.util import library_to_crate_name, to_extern_crate_name
+    from generator.lib.filters import (estr, enclose_in, hash_comment)
+%>\
 <%namespace name="util" file="../lib/util.mako"/>\
 <%block filter="hash_comment">\
 <%util:gen_info source="${self.uri}" />\

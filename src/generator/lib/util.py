@@ -1,33 +1,14 @@
 import os
 import re
-import subprocess
-
-import inflect
+from copy import deepcopy
 from dataclasses import dataclass
 from typing import Any, Dict, List, Mapping, Tuple
-from copy import deepcopy
-from .rust_type import Base, Box, HashMap, Vec, Option, RustType
-from .types import RUST_TYPE_MAP, RUST_TYPE_RND_MAP
 
-re_linestart = re.compile('^', flags=re.MULTILINE)
-re_spaces_after_newline = re.compile('^ {4}', flags=re.MULTILINE)
-re_first_4_spaces = re.compile('^ {1,4}', flags=re.MULTILINE)
-re_desc_parts = re.compile(
-    r"((the part (names|properties) that you can include in the parameter value are)|(supported values are ))(.*?)\.",
-    flags=re.IGNORECASE | re.MULTILINE)
-
-re_find_replacements = re.compile(r"\{[/\+]?\w+\*?\}")
+from generator.lib.filters import singular, extract_parts
+from .types import is_nested_type, is_nested_type_property, _assure_unique_type_name, nested_type_name, is_map_prop, \
+    to_rust_type, canonical_type_name, mangle_ident, RUST_TYPE_RND_MAP
 
 HTTP_METHODS = set(("OPTIONS", "GET", "POST", "PUT", "DELETE", "HEAD", "TRACE", "CONNECT", "PATCH"))
-
-
-RESERVED_WORDS = set(('abstract', 'alignof', 'as', 'become', 'box', 'break', 'const', 'continue', 'crate', 'do',
-                      'else', 'enum', 'extern', 'false', 'final', 'fn', 'for', 'if', 'impl', 'in', 'let', 'loop',
-                      'macro', 'match', 'mod', 'move', 'mut', 'offsetof', 'override', 'priv', 'pub', 'pure', 'ref',
-                      'return', 'sizeof', 'static', 'self', 'struct', 'super', 'true', 'trait', 'type', 'typeof',
-                      'unsafe', 'unsized', 'use', 'virtual', 'where', 'while', 'yield'))
-
-
 
 TREF = '$ref'
 IO_RESPONSE = 'response'
@@ -43,8 +24,6 @@ ADD_SCOPES_FN = "add_scopes"
 CLEAR_SCOPES_FN = "clear_scopes"
 
 ADD_PARAM_MEDIA_EXAMPLE = "." + ADD_PARAM_FN + '("alt", "media")'
-
-SPACES_PER_TAB = 4
 
 NESTED_TYPE_SUFFIX = 'item'
 DELEGATE_TYPE = 'client::Delegate'
@@ -96,9 +75,6 @@ data_unit_multipliers = {
 }
 
 
-inflection = inflect.engine()
-
-
 HUB_TYPE_PARAMETERS = ('S',)
 
 
@@ -113,351 +89,13 @@ def custom_sorted(p: List[Mapping[str, Any]]) -> List[Mapping[str, Any]]:
     return sorted(p, key=lambda p: p['name'])
 
 
-# ==============================================================================
-## @name Filters
-# ------------------------------------------------------------------------------
-## @{
-
-# rust module doc comment filter
-def rust_module_doc_comment(s):
-    return re_linestart.sub('//! ', s)
-
-
-# rust doc comment filter
-def rust_doc_comment(s):
-    return re_linestart.sub('/// ', s)
-
-
-# returns true if there is an indication for something that is interpreted as doc comment by rustdoc
-def has_markdown_codeblock_with_indentation(s):
-    return re_spaces_after_newline.search(s) != None
-
-
-def preprocess(s):
-    p = subprocess.Popen([os.environ['PREPROC']], close_fds=True, stdin=subprocess.PIPE, stdout=subprocess.PIPE)
-    res = p.communicate(s.encode('utf-8'))
-    return res[0].decode('utf-8')
-
-
-# runs the preprocessor in case there is evidence for code blocks using indentation
-def rust_doc_sanitize(s):
-    if has_markdown_codeblock_with_indentation(s):
-        return preprocess(s)
-    else:
-        return s
-
-
-# rust comment filter
-def rust_comment(s):
-    return re_linestart.sub('// ', s)
-
-
-# hash-based comment filter
-def hash_comment(s):
-    return re_linestart.sub('# ', s)
-
-
-# hides lines in rust examples, if not already hidden, or empty.
-def hide_rust_doc_test(s):
-    return re.sub('^[^#\n]', lambda m: '# ' + m.group(), s, flags=re.MULTILINE)
-
-
-# remove the first indentation (must be spaces !)
-def unindent(s):
-    return re_first_4_spaces.sub('', s)
-
-
-# don't do anything with the passed in string
-def pass_through(s):
-    return s
-
-
-# tabs: 1 tabs is 4 spaces
-def unindent_first_by(tabs):
-    def unindent_inner(s):
-        return re_linestart.sub(' ' * tabs * SPACES_PER_TAB, s)
-
-    return unindent_inner
-
-
-# filter to remove empty lines from a string
-def remove_empty_lines(s):
-    return re.sub("^\n", '', s, flags=re.MULTILINE)
-
-
-# Prepend prefix  to each line but the first
-def prefix_all_but_first_with(prefix):
-    def indent_inner(s):
-        try:
-            i = s.index('\n')
-        except ValueError:
-            f = s
-            p = None
-        else:
-            f = s[:i + 1]
-            p = s[i + 1:]
-        if p is None:
-            return f
-        return f + re_linestart.sub(prefix, p)
-
-    return indent_inner
-
-
-# tabs: 1 tabs is 4 spaces
-def indent_all_but_first_by(indent, indent_in_tabs=True):
-    if indent_in_tabs:
-        indent *= SPACES_PER_TAB
-    spaces = ' ' * indent
-    return prefix_all_but_first_with(spaces)
-
-
-# add 4 spaces to the beginning of a line.
-# useful if you have defs embedded in an unindent block - they need to counteract.
-# It's a bit itchy, but logical
-def indent(s):
-    return re_linestart.sub(' ' * SPACES_PER_TAB, s)
-
-
-# indent by given amount of spaces
-def indent_by(n):
-    def indent_inner(s):
-        return re_linestart.sub(' ' * n, s)
-
-    return indent_inner
-
-
-# return s, with trailing newline
-def trailing_newline(s):
-    if not s.endswith('\n'):
-        return s + '\n'
-    return s
-
-
-# a rust test that doesn't run though
-def rust_doc_test_norun(s):
-    return "```test_harness,no_run\n%s```" % trailing_newline(s)
-
-
-# a rust code block in (github) markdown
-def markdown_rust_block(s):
-    return "```Rust\n%s```" % trailing_newline(s)
-
-
-# wraps s into an invisible doc test function.
-def rust_test_fn_invisible(s):
-    return "# async fn dox() {\n%s# }" % trailing_newline(s)
-
-
-# markdown comments
-def markdown_comment(s):
-    return "<!---\n%s-->" % trailing_newline(s)
-
-
-# escape each string in l with "s" and return the new list
-def estr(l):
-    return ['"%s"' % i for i in l]
-
-
-# escape all '"' with '\"'
-def escape_rust_string(s):
-    return s.replace('"', '\\"')
-
-
-## -- End Filters -- @}
-
-# ==============================================================================
-## @name Natural Language Utilities
-# ------------------------------------------------------------------------------
-## @{
-
-# l must be a list, if it is more than one, 'and' will before last item
-# l will also be coma-separtated
-# Returns string
-def put_and(l):
-    if len(l) < 2:
-        return l[0]
-    return ', '.join(l[:-1]) + ' and ' + l[-1]
-
-
-# ['foo', ...] with e == '*' -> ['*foo*', ...]
-def enclose_in(e, l):
-    return ['%s%s%s' % (e, s, e) for s in l]
-
-
-def md_italic(l):
-    return enclose_in('*', l)
-
-
-def singular(s):
-    if s.lower().endswith('data'):
-        return s
-
-    single_noun = inflection.singular_noun(s)
-
-    if single_noun is False:
-        return s
-    else:
-        return single_noun
-
-
-def split_camelcase_s(s):
-    s1 = re.sub('(.)([A-Z][a-z]+)', r'\1 \2', s)
-    return re.sub('([a-z0-9])([A-Z])', r'\1 \2', s1).lower()
-
-
-def camel_to_under(s):
-    s1 = re.sub('(.)([A-Z][a-z]+)', r'\1_\2', s)
-    return re.sub('([a-z0-9])([A-Z])', r'\1_\2', s1).lower()
-
-
-# there are property descriptions from which parts can be extracted. Regex is based on youtube ... it's sufficiently
-# easy enough to add more cases ...
-# return ['part', ...] or []
-def extract_parts(desc):
-    res = list()
-    m = re_desc_parts.search(desc)
-    if m is None:
-        return res
-    for part in m.groups()[-1].split(' '):
-        part = part.strip(',').strip()
-        if not part or part == 'and':
-            continue
-        res.append(part)
-    return res
-
-
-## -- End Natural Language Utilities -- @}
-
-
-# ==============================================================================
-## @name Rust TypeSystem
-# ------------------------------------------------------------------------------
-## @{
-
-def capitalize(s):
-    return s[:1].upper() + s[1:]
-
-
-# Return transformed string that could make a good type name
-def canonical_type_name(s):
-    # can't use s.capitalize() as it will lower-case the remainder of the string
-    s = ''.join(capitalize(t) for t in s.split(' '))
-    s = ''.join(capitalize(t) for t in s.split('_'))
-    s = ''.join(capitalize(t) for t in s.split('-'))
-    return capitalize(s)
-
-
-def nested_type_name(sn, pn):
-    suffix = canonical_type_name(pn)
-    return sn + suffix
-
-
-# Make properties which are reserved keywords usable
-def mangle_ident(n):
-    n = camel_to_under(n).replace('-', '.').replace('.', '_').replace('$', '')
-    if n in RESERVED_WORDS:
-        return n + '_'
-    return n
-
-
-def is_map_prop(p):
-    return 'additionalProperties' in p
-
-
-def _assure_unique_type_name(schemas, tn):
-    if tn in schemas:
-        tn += 'Nested'
-        assert tn not in schemas
-    return tn
-
-
-# map a json type to an rust type
-# t = type dict
-# NOTE: In case you don't understand how this algorithm really works ... me neither - THE AUTHOR
-def to_rust_type(
-        schemas,
-        schema_name,
-        property_name,
-        t,
-        allow_optionals=True,
-        _is_recursive=False
-) -> str:
-    return str(to_rust_type_inner(schemas, schema_name, property_name, t, allow_optionals, _is_recursive))
-
-
-def to_serde_type(
-        schemas,
-        schema_name,
-        property_name,
-        t,
-        allow_optionals=True,
-        _is_recursive=False
-) -> Tuple[RustType, bool]:
-    return to_rust_type_inner(schemas, schema_name, property_name, t, allow_optionals, _is_recursive).serde_as()
-
-
-def to_rust_type_inner(
-        schemas,
-        schema_name,
-        property_name,
-        t,
-        allow_optionals=True,
-        _is_recursive=False
-) -> RustType:
-    def nested_type(nt) -> RustType:
-        if 'items' in nt:
-            nt = nt['items']
-        elif 'additionalProperties' in nt:
-            nt = nt['additionalProperties']
-        else:
-            assert is_nested_type_property(nt)
-            # It's a nested type - we take it literally like $ref, but generate a name for the type ourselves
-            return Base(_assure_unique_type_name(schemas, nested_type_name(schema_name, property_name)))
-        return to_rust_type_inner(schemas, schema_name, property_name, nt, allow_optionals=False, _is_recursive=True)
-
-    def wrap_type(rt) -> RustType:
-        if allow_optionals:
-            return Option(rt)
-        return rt
-
-    # unconditionally handle $ref types, which should point to another schema.
-    if TREF in t:
-        # simple, non-recursive fix for some recursive types. This only works on the first depth level
-        # which is fine for now. 'allow_optionals' implicitly restricts type boxing for simple types - it
-        # is usually on the first call, and off when recursion is involved.
-        tn = t[TREF]
-        rt = Base(tn)
-        if not _is_recursive and tn == schema_name:
-            rt = Option(Box(rt))
-        return wrap_type(rt)
-    try:
-        # prefer format if present
-        rust_type = RUST_TYPE_MAP[t.get("format", t["type"])]
-        if rust_type == Vec(None):
-            return wrap_type(Vec(nested_type(t)))
-        if rust_type == HashMap(None, None):
-            if is_map_prop(t):
-                return wrap_type(HashMap(Base("String"), nested_type(t)))
-            return wrap_type(nested_type(t))
-        if t.get('repeated', False):
-            return Vec(rust_type)
-        return wrap_type(rust_type)
-    except KeyError as err:
-        raise AssertionError(
-            "%s: Property type '%s' unknown - add new type mapping: %s" % (str(err), t['type'], str(t)))
-    except AttributeError as err:
-        raise AssertionError("%s: unknown dict layout: %s" % (str(err), t))
-
-
-# return True if this property is actually a nested type
-def is_nested_type_property(t):
-    return 'type' in t and t['type'] == 'object' and 'properties' in t or ('items' in t and 'properties' in t['items'])
-
-
-# Return True if the schema is nested
-def is_nested_type(s):
-    return len(s.parents) > 0
-
+# -------------------------
+## @name Schema Utilities
+# @{
+
+# NOTE: unfortunately, it turned out that sometimes fields are missing. The only way to handle this is to
+# use optionals everywhere. If that should ever change, we can make a decision here based on the
+# non-transitive markers that we get here !
 
 # convert a rust-type to something that would be taken as input of a function
 # even though our storage type is different
@@ -539,14 +177,11 @@ def schema_markers(s, c, transitive=True):
     return sorted(res)
 
 
-## -- End Rust TypeSystem -- @}
-
-# NOTE: unfortunately, it turned out that sometimes fields are missing. The only way to handle this is to
-# use optionals everywhere. If that should ever change, we can make a decision here based on the
-# non-transitive markers that we get here !
 def is_schema_with_optionals(schema_markers):
     return True
 
+
+## -- End Schema Utilities -- @}
 
 # -------------------------
 ## @name Activity Utilities
@@ -564,7 +199,7 @@ def activity_split(fqan: str) -> Tuple[str, str, str]:
 
 # Shorthand to get a type from parameters of activities
 def activity_rust_type(schemas, p, allow_optionals=True):
-    return to_rust_type(schemas, None, p.name, p, allow_optionals=allow_optionals)
+    return str(to_rust_type(schemas, None, p.name, p, allow_optionals=allow_optionals))
 
 
 # the inverse of activity-split, but needs to know the 'name' of the API
@@ -775,7 +410,7 @@ def new_context(schemas: Dict[str, Dict[str, Any]], resources: Dict[str, Any]) -
                     t = m.get(in_out_type_name, None)
                     if t is None:
                         continue
-                    tn = to_rust_type(schemas, None, None, t, allow_optionals=False)
+                    tn = str(to_rust_type(schemas, None, None, t, allow_optionals=False))
                     info = res.setdefault(tn, dict())
                     io_info = info.setdefault(m["id"], [])
                     io_info.append(in_out_type_name)
@@ -991,7 +626,7 @@ def _to_type_params_s(p):
     return '<%s>' % ', '.join(p)
 
 
-# return type parameters of a the hub, ready for use in Rust code
+# return type parameters of the hub, ready for use in Rust code
 def hub_type_params_s():
     return _to_type_params_s(HUB_TYPE_PARAMETERS)
 
@@ -1103,7 +738,7 @@ def parts_from_params(params):
     # end for each param
     if part_prop:
         return part_prop, extract_parts(part_prop.get('description', ''))
-    return part_prop, list()
+    return part_prop, []
 
 
 # Convert a scope url to a nice enum variant identifier, ready for use in code
@@ -1132,19 +767,9 @@ def scope_url_to_variant(name, url, fully_qualified=True):
 
 def method_name_to_variant(name):
     name = name.upper()
-    fmt = 'hyper::Method.from_str("%s")'
     if name in HTTP_METHODS:
-        fmt = 'hyper::Method::%s'
-    return fmt % name
-
-
-# given a rust type-name (no optional, as from to_rust_type), you will get a suitable random default value
-# as string suitable to be passed as reference (or copy, where applicable)
-def rnd_arg_val_for_type(tn):
-    try:
-        return str(RUST_TYPE_RND_MAP[tn]())
-    except KeyError:
-        return '&Default::default()'
+        return f"hyper::Method::{name}"
+    return f"hyper::Method.from_str(\"{name}\")"
 
 
 # Converts a size to the respective integer
